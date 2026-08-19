@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureFileCrypt</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <h1>SecureFileCrypt</h1>
+    <p>Encrypt any file with a password.</p>
+
+    <input id="fileInput" type="file">
+
+    <input
+      id="passwordInput"
+      type="password"
+      placeholder="Enter password"
+      autocomplete="new-password"
+    >
+
+    <button id="encryptButton">Encrypt File</button>
+    <button id="decryptButton">Decrypt File</button>
+
+    <p id="status"></p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
