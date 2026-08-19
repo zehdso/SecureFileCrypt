@@ -3,29 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Securely encrypt and decrypt files locally in your browser.">
   <title>SecureFileCrypt</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <main class="app">
-    <h1>SecureFileCrypt</h1>
-    <p>Encrypt any file with a password.</p>
 
-    <input id="fileInput" type="file">
+    <header class="header">
+      <h1>SecureFileCrypt</h1>
+      <p>Secure your files locally.</p>
+    </header>
 
-    <input
-      id="passwordInput"
-      type="password"
-      placeholder="Enter password"
-      autocomplete="new-password"
-    >
+    <nav class="tabs">
+      <button id="encryptTab" class="tab active">Encrypt</button>
+      <button id="decryptTab" class="tab">Decrypt</button>
+    </nav>
 
-    <button id="encryptButton">Encrypt File</button>
-    <button id="decryptButton">Decrypt File</button>
+    <section id="encryptPage" class="page">
 
-    <p id="status"></p>
+      <h2>Encrypt a file</h2>
+      <p class="description">
+        Turn any file into a password-protected encrypted file.
+      </p>
+
+      <label for="encryptFile">File</label>
+      <input id="encryptFile" type="file">
+
+      <label for="encryptPassword">Password</label>
+
+      <div class="password-box">
+        <input
+          id="encryptPassword"
+          type="password"
+          placeholder="Enter password"
+          autocomplete="new-password"
+        >
+        <button type="button" class="toggle-password" data-target="encryptPassword">
+          Show
+        </button>
+      </div>
+
+      <button id="encryptButton" class="primary-button">
+        Encrypt File
+      </button>
+
+      <p id="encryptStatus" class="status"></p>
+
+      <div id="encryptResult" class="result hidden">
+        <div>
+          <strong id="encryptResultName"></strong>
+          <span id="encryptResultSize"></span>
+        </div>
+
+        <button id="encryptDownload" class="download-button">
+          Download
+        </button>
+      </div>
+
+    </section>
+
+    <section id="decryptPage" class="page hidden">
+
+      <h2>Decrypt a file</h2>
+      <p class="description">
+        Restore a SecureFileCrypt file using its password.
+      </p>
+
+      <label for="decryptFile">Encrypted file</label>
+      <input id="decryptFile" type="file">
+
+      <label for="decryptPassword">Password</label>
+
+      <div class="password-box">
+        <input
+          id="decryptPassword"
+          type="password"
+          placeholder="Enter password"
+          autocomplete="current-password"
+        >
+        <button type="button" class="toggle-password" data-target="decryptPassword">
+          Show
+        </button>
+      </div>
+
+      <button id="decryptButton" class="primary-button">
+        Decrypt File
+      </button>
+
+      <p id="decryptStatus" class="status"></p>
+
+      <div id="decryptResult" class="result hidden">
+        <div>
+          <strong id="decryptResultName"></strong>
+          <span id="decryptResultSize"></span>
+        </div>
+
+        <button id="decryptDownload" class="download-button">
+          Download
+        </button>
+      </div>
+
+    </section>
+
   </main>
 
+  <div id="warningModal" class="modal hidden">
+    <div class="modal-card">
+
+      <h2>Important</h2>
+
+      <p>
+        The encrypted file has no file extension.
+        Some newer devices may treat extensionless files as unknown files
+        and may automatically scan, block, or delete them.
+      </p>
+
+      <p>
+        Keep a backup of important encrypted files.
+      </p>
+
+      <button id="closeWarning" class="primary-button">
+        I understand
+      </button>
+
+    </div>
+  </div>
+
+  <script src="lib/argon2-bundled.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
