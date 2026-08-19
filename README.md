@@ -9,10 +9,16 @@
   Your files never need to be uploaded to a server.
 </p>
 
+## Live Demo
+
 <p align="center">
-  <a href="https://zehdso.github.io/SecureFileCrypt/">Live Demo</a>
-  ·
-  <a href="https://github.com/zehdso/SecureFileCrypt">Repository</a>
+  <a href="https://zehdso.github.io/SecureFileCrypt/">
+    <img src="https://img.shields.io/badge/Visit%20SecureFileCrypt-18181B?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Visit SecureFileCrypt">
+  </a>
+</p>
+
+<p align="center">
+  https://zehdso.github.io/SecureFileCrypt/
 </p>
 
 ---
