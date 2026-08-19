@@ -9,7 +9,7 @@
   Your files never need to be uploaded to a server.
 </p>
 
-## Live Demo
+## Try SecureFileCrypt
 
 <p align="center">
   <a href="https://zehdso.github.io/SecureFileCrypt/">
