@@ -1,86 +1,273 @@
 # SecureFileCrypt
 
-SecureFileCrypt is a free, open-source, browser-based file encryption tool that lets you encrypt and decrypt files locally using a password.
+<p align="center">
+  <strong>Private file encryption — directly in your browser.</strong>
+</p>
 
-**Live website:** https://zehdso.github.io/SecureFileCrypt/
+<p align="center">
+  Encrypt and decrypt files locally with a password.
+  Your files never need to be uploaded to a server.
+</p>
+
+<p align="center">
+  <a href="https://zehdso.github.io/SecureFileCrypt/">Live Demo</a>
+  ·
+  <a href="https://github.com/zehdso/SecureFileCrypt">Repository</a>
+</p>
+
+---
+
+## Overview
+
+SecureFileCrypt is a browser-based file encryption tool designed to make strong file encryption simple and accessible.
+
+It can encrypt almost any type of file — videos, photos, documents, archives, backups, and more — and produce an extensionless encrypted file that can later be restored with the correct password.
+
+All cryptographic operations happen locally in the browser.
+
+**No account. No file upload. No password database.**
+
+---
 
 ## Features
 
-- Encrypt almost any file type
-- Decrypt encrypted files with the correct password
-- AES-256-GCM authenticated encryption
-- Argon2id password-based key derivation
-- Random salt for every encrypted file
-- Chunk-based processing for large files
-- No password storage
-- No account required
-- No file upload to a server
-- Runs entirely in the browser
-- Extensionless encrypted output
-- Manual download after encryption/decryption
-- Show/hide password controls
-- Backward compatibility with earlier SecureFileCrypt formats
+| Feature | SecureFileCrypt |
+|---|---|
+| File types | Almost any file |
+| Encryption | AES-256-GCM |
+| Password protection | Argon2id |
+| Processing | Chunk-based |
+| File upload | Not required |
+| Password storage | None |
+| Account | Not required |
+| Output extension | None |
+| Browser-based | Yes |
+| Large-file support | Chunked processing |
+| Older encrypted files | Supported |
+
+---
 
 ## How It Works
 
-1. Select a file.
-2. Enter a password.
-3. SecureFileCrypt generates a random salt.
-4. Argon2id derives a 256-bit encryption key from the password and salt.
-5. The file is processed in chunks.
-6. AES-256-GCM encrypts and authenticates each chunk.
-7. The encrypted result can be downloaded as an extensionless file.
-8. To restore it, select the encrypted file and enter the same password.
+### 1. Select a file
 
-## Security
+Choose any file from your device.
+
+Examples:
+
+`photo.jpg`  
+`video.mp4`  
+`document.pdf`  
+`archive.zip`  
+`backup.dat`
+
+SecureFileCrypt does not require a specific file format.
+
+### 2. Enter a password
+
+The password is entered locally in your browser.
+
+SecureFileCrypt does not send your password to a server or store it in a password database.
+
+### 3. Generate a random salt
+
+A cryptographically secure random salt is generated for every encryption operation.
+
+This means that encrypting two files with the same password does not produce the same derived key.
+
+### 4. Derive the encryption key
+
+For new encrypted files, SecureFileCrypt uses **Argon2id** to derive a 256-bit encryption key from the password and random salt.
+
+Argon2id is designed to make large-scale password-guessing attacks significantly more expensive.
+
+### 5. Encrypt the file
+
+The file is processed in chunks.
+
+Each chunk is encrypted and authenticated using **AES-256-GCM**.
+
+Authentication also allows the application to detect incorrect passwords or modified encrypted data.
+
+### 6. Download the encrypted file
+
+The result is an extensionless encrypted file.
+
+For example:
+
+```text
+video.mp4
+    ↓
+video
+```
+
+The original file is not modified.
+
+### 7. Decrypt it later
+
+Select the encrypted file, enter the same password, and SecureFileCrypt restores the original filename and file contents.
+
+```text
+video
+    ↓
+video.mp4
+```
+
+---
+
+## Security Architecture
+
+```text
+                 User Password
+                       │
+                       ▼
+              Random 128-bit Salt
+                       │
+                       ▼
+                    Argon2id
+                       │
+                       ▼
+                256-bit AES Key
+                       │
+                       ▼
+                 File Chunks
+                       │
+                       ▼
+                 AES-256-GCM
+                       │
+                       ▼
+              Encrypted File
+```
 
 ### Argon2id
 
-New encrypted files use Argon2id to derive the encryption key from the user's password, making password-guessing attacks significantly more expensive.
+Argon2id is used for password-based key derivation in the current SFC3 format.
+
+It is specifically designed to make password guessing more expensive than using a normal cryptographic hash.
 
 ### AES-256-GCM
 
-File contents are encrypted using AES with a 256-bit key, while GCM authentication helps detect incorrect passwords and tampering.
+AES-256-GCM provides both confidentiality and authentication.
+
+A correct password is required to recover the plaintext, and tampering with encrypted data can be detected.
 
 ### Random Salt
 
-Every encryption operation generates a fresh random salt, so using the same password for different files does not produce the same derived key.
+Every encrypted file receives a new random salt.
+
+The salt is stored in the encrypted file because it is not secret.
+
+### Random Initialization Data
+
+Encryption uses randomly generated initialization data, with separate per-chunk values derived from the base value.
 
 ### Local Processing
 
-Files and passwords are processed locally inside the browser. SecureFileCrypt does not require uploading files to a server.
+The application performs encryption and decryption inside the browser.
 
-### No Password Storage
+The project does not require a backend server to process the user's files.
 
-SecureFileCrypt does not store the user's password.
+---
 
-## Important
+## Privacy Model
 
-**Your password is critical.**
+SecureFileCrypt is intentionally designed without a file-upload backend.
 
-If you forget the password, SecureFileCrypt cannot recover the encrypted file for you.
+```text
+Your device
+    │
+    ├── File
+    ├── Password
+    └── Encryption
+          │
+          ▼
+     Your browser
+          │
+          ▼
+   Encrypted file
+          │
+          ▼
+     Your device
+```
 
-Use a long, unique password for important files.
+GitHub Pages only serves the website.
 
-The encrypted file has no extension. Some devices or security software may treat extensionless files as unknown files and may scan, block, or remove them, so keep backups of important encrypted files.
+The encryption operation does not require sending the selected file to GitHub or to a SecureFileCrypt server.
 
-## File Formats
+---
 
-SecureFileCrypt currently supports multiple internal formats:
+## Password Security
 
-- **SFC1** — original encryption format
-- **SFC2** — chunked encryption format using PBKDF2
-- **SFC3** — current format using Argon2id and chunked AES-256-GCM
+The password is the most important part of the security model.
 
-Older SecureFileCrypt encrypted files remain decryptable when their format is supported.
+Use a strong, unique password. A long passphrase is generally preferable to a short password.
 
-## Privacy
+**There is no password recovery mechanism.**
 
-SecureFileCrypt is designed around local processing.
+If the password is lost, SecureFileCrypt cannot recover the encrypted contents.
 
-GitHub Pages hosts the website, while encryption and decryption happen inside the user's browser. The application does not need to receive the user's files or passwords.
+---
+
+## Extensionless Files
+
+SecureFileCrypt intentionally removes the normal file extension from the encrypted output.
+
+For example:
+
+```text
+document.pdf
+      ↓
+document
+```
+
+Some newer operating systems, device security systems, file scanners, or storage applications may treat extensionless files as unknown files.
+
+They may scan, block, quarantine, or remove such files.
+
+**Keep backups of important encrypted files.**
+
+---
+
+## File Format Versions
+
+SecureFileCrypt supports multiple internal formats.
+
+### SFC1
+
+Original SecureFileCrypt encryption format.
+
+### SFC2
+
+Chunk-based encryption format using PBKDF2 and AES-256-GCM.
+
+### SFC3
+
+Current encryption format using:
+
+- Argon2id
+- AES-256-GCM
+- Random salt
+- Chunk-based processing
+
+New files use SFC3.
+
+Older supported SecureFileCrypt files remain decryptable.
+
+---
+
+## No Password Database
+
+SecureFileCrypt does not maintain a central password database.
+
+There is no account system required to encrypt or decrypt a file.
+
+Your password stays with you.
+
+---
 
 ## Technology
+
+SecureFileCrypt is built with:
 
 - HTML
 - CSS
@@ -90,16 +277,93 @@ GitHub Pages hosts the website, while encryption and decryption happen inside th
 - Argon2id
 - GitHub Pages
 
-## Open Source
+---
 
-SecureFileCrypt is open source and can be inspected, modified, and self-hosted.
+## Project Structure
 
-## Disclaimer
+```text
+SecureFileCrypt/
+├── index.html
+├── style.css
+├── app.js
+├── lib/
+│   └── argon2-bundled.min.js
+├── README.md
+└── LICENSE
+```
 
-SecureFileCrypt is provided as an open-source privacy tool. Keep independent backups of important files and passwords.
+---
 
-Encryption cannot protect a weak password or a compromised device.
+## Running Locally
+
+Clone the repository:
+
+```bash
+git clone https://github.com/zehdso/SecureFileCrypt.git
+cd SecureFileCrypt
+```
+
+Start a local web server:
+
+```bash
+python -m http.server 8080
+```
+
+Then open:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## Live Version
+
+Use SecureFileCrypt directly in your browser:
+
+**https://zehdso.github.io/SecureFileCrypt/**
+
+---
+
+## Source Available
+
+The source code is publicly available so users can inspect how the application works.
+
+The project is licensed under the custom **SecureFileCrypt Non-Commercial Source-Available License**.
+
+Commercial use, commercial redistribution, paid hosting, and selling the software require permission from the copyright holder.
+
+See [`LICENSE`](LICENSE) for the complete terms.
+
+---
+
+## Security Disclaimer
+
+SecureFileCrypt is designed using established cryptographic primitives, but no software can guarantee absolute security.
+
+Security also depends on:
+
+- Password strength
+- Device security
+- Browser security
+- Operating-system security
+- Keeping backups
+- Protecting the encrypted file
+
+Do not rely on SecureFileCrypt as the only copy of important data.
+
+---
 
 ## License
 
-See the repository license for the terms under which SecureFileCrypt may be used, modified, and distributed.
+**SecureFileCrypt Non-Commercial Source-Available License**
+
+Copyright © 2026 Zehdso.
+
+See the [`LICENSE`](LICENSE) file for the complete license terms.
+
+---
+
+<p align="center">
+  <strong>Secure your files. Keep control of your data.</strong>
+</p>
