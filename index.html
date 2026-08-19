@@ -22,7 +22,6 @@
     </nav>
 
     <section id="encryptPage" class="page">
-
       <h2>Encrypt a file</h2>
       <p class="description">
         Turn any file into a password-protected encrypted file.
@@ -61,11 +60,9 @@
           Download
         </button>
       </div>
-
     </section>
 
     <section id="decryptPage" class="page hidden">
-
       <h2>Decrypt a file</h2>
       <p class="description">
         Restore a SecureFileCrypt file using its password.
@@ -104,6 +101,176 @@
           Download
         </button>
       </div>
+    </section>
+
+    <section class="information">
+
+      <div class="info-block">
+        <h2>How it works</h2>
+
+        <div class="step">
+          <span class="step-number">1</span>
+          <div>
+            <h3>Select a file</h3>
+            <p>
+              Choose any file from your device. SecureFileCrypt is not limited
+              to videos or a specific file format.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-number">2</span>
+          <div>
+            <h3>Enter a password</h3>
+            <p>
+              Your password is used locally to derive a cryptographic key.
+              SecureFileCrypt does not send your password to a server.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-number">3</span>
+          <div>
+            <h3>Generate a random salt</h3>
+            <p>
+              A new random salt is generated for every encrypted file.
+              This prevents identical passwords from producing identical keys.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-number">4</span>
+          <div>
+            <h3>Derive the encryption key</h3>
+            <p>
+              Argon2id transforms your password and the random salt into a
+              strong 256-bit encryption key while making password-guessing
+              attacks significantly more expensive.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-number">5</span>
+          <div>
+            <h3>Encrypt the file</h3>
+            <p>
+              AES-256-GCM encrypts the file and authenticates each encrypted
+              chunk, helping detect incorrect passwords or modified data.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-number">6</span>
+          <div>
+            <h3>Download the encrypted file</h3>
+            <p>
+              The result is an extensionless encrypted file. The original file
+              remains unchanged on your device.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-block">
+        <h2>Why is it secure?</h2>
+
+        <div class="security-item">
+          <h3>Argon2id</h3>
+          <p>
+            Argon2id is a password-hardening algorithm designed to make large
+            numbers of password guesses expensive, especially for attackers
+            using specialized hardware.
+          </p>
+        </div>
+
+        <div class="security-item">
+          <h3>AES-256-GCM</h3>
+          <p>
+            AES with a 256-bit key provides strong encryption, while GCM also
+            provides authentication so modified encrypted data can be detected.
+          </p>
+        </div>
+
+        <div class="security-item">
+          <h3>Random salt</h3>
+          <p>
+            Every encryption operation generates a fresh random salt, so the
+            same password can safely be used for different files without
+            producing the same derived key.
+          </p>
+        </div>
+
+        <div class="security-item">
+          <h3>Local processing</h3>
+          <p>
+            Encryption and decryption happen inside your browser. Your file and
+            password are not uploaded to SecureFileCrypt servers.
+          </p>
+        </div>
+
+        <div class="security-item">
+          <h3>No password storage</h3>
+          <p>
+            SecureFileCrypt does not need to store your password. Without the
+            correct password, the encrypted file cannot be normally decrypted.
+          </p>
+        </div>
+      </div>
+
+      <div class="info-block">
+        <h2>Important to know</h2>
+
+        <ul class="important-list">
+          <li>
+            <strong>Your password matters.</strong>
+            A weak password can still be guessed. Use a long, unique password.
+          </li>
+
+          <li>
+            <strong>There is no password recovery.</strong>
+            If you lose the password, SecureFileCrypt cannot recover the
+            encrypted file for you.
+          </li>
+
+          <li>
+            <strong>Keep backups.</strong>
+            Important encrypted files should have a backup because losing the
+            encrypted file or its password can mean permanent data loss.
+          </li>
+
+          <li>
+            <strong>The encrypted file has no extension.</strong>
+            Some operating systems or security software may treat extensionless
+            files as unknown files and may scan, block, or remove them.
+          </li>
+
+          <li>
+            <strong>Encryption does not hide file existence.</strong>
+            Anyone who can access the encrypted file can see that a file exists,
+            even though they cannot normally read its encrypted contents.
+          </li>
+        </ul>
+      </div>
+
+      <div class="info-block">
+        <h2>Privacy by design</h2>
+
+        <p>
+          SecureFileCrypt is designed so that the website does not need your
+          files, passwords, or accounts. The browser performs the cryptographic
+          operations locally, while GitHub Pages only serves the website files.
+        </p>
+
+        <p>
+          This means the hosting service does not need to receive the file you
+          are encrypting.
+        </p>
+      </div>
 
     </section>
 
@@ -111,7 +278,6 @@
 
   <div id="warningModal" class="modal hidden">
     <div class="modal-card">
-
       <h2>Important</h2>
 
       <p>
@@ -127,7 +293,6 @@
       <button id="closeWarning" class="primary-button">
         I understand
       </button>
-
     </div>
   </div>
 
