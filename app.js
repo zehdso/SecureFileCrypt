@@ -4,6 +4,12 @@ const decryptFile = document.getElementById("decryptFile");
 const encryptPassword = document.getElementById("encryptPassword");
 const decryptPassword = document.getElementById("decryptPassword");
 
+const generatePasswordButton = document.getElementById("generatePassword");
+const copyPasswordButton = document.getElementById("copyPassword");
+const passwordStrength = document.getElementById("passwordStrength");
+const passwordStrengthFill = document.getElementById("passwordStrengthFill");
+const passwordStrengthText = document.getElementById("passwordStrengthText");
+
 const encryptButton = document.getElementById("encryptButton");
 const decryptButton = document.getElementById("decryptButton");
 
@@ -20,6 +26,7 @@ const encryptResultSize = document.getElementById("encryptResultSize");
 const decryptResultSize = document.getElementById("decryptResultSize");
 
 const encryptDownload = document.getElementById("encryptDownload");
+const encryptZipDownload = document.getElementById("encryptZipDownload");
 const decryptDownload = document.getElementById("decryptDownload");
 
 const encryptTab = document.getElementById("encryptTab");
@@ -46,6 +53,116 @@ const ARGON2_HASH_LENGTH = 32;
 
 let pendingEncryptDownload = null;
 let pendingDecryptDownload = null;
+
+function getPasswordStrength(password) {
+  if (!password) {
+    return { score: 0, text: "", width: "0%" };
+  }
+
+  let score = 0;
+
+  if (password.length >= 12) score++;
+  if (password.length >= 16) score++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+  if (/\\d/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) {
+    return { score, text: "Weak", width: "20%" };
+  }
+
+  if (score === 2) {
+    return { score, text: "Fair", width: "40%" };
+  }
+
+  if (score === 3) {
+    return { score, text: "Good", width: "60%" };
+  }
+
+  if (score === 4) {
+    return { score, text: "Strong", width: "80%" };
+  }
+
+  return { score, text: "Very strong", width: "100%" };
+}
+
+function updatePasswordStrength() {
+  if (!passwordStrength || !passwordStrengthFill || !passwordStrengthText) {
+    return;
+  }
+
+  const result = getPasswordStrength(encryptPassword.value);
+
+  if (!encryptPassword.value) {
+    passwordStrength.classList.add("hidden");
+    passwordStrengthFill.style.width = "0%";
+    passwordStrengthText.textContent = "";
+    return;
+  }
+
+  passwordStrength.classList.remove("hidden");
+  passwordStrengthFill.style.width = result.width;
+  passwordStrengthText.textContent = result.text;
+}
+
+function generateStrongPassword(length = 20) {
+  const alphabet =
+    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()-_=+";
+
+  const values = new Uint32Array(length);
+  crypto.getRandomValues(values);
+
+  let password = "";
+
+  for (let i = 0; i < values.length; i++) {
+    password += alphabet[values[i] % alphabet.length];
+  }
+
+  return password;
+}
+
+if (encryptPassword) {
+  encryptPassword.addEventListener("input", updatePasswordStrength);
+}
+
+if (generatePasswordButton) {
+  generatePasswordButton.addEventListener("click", () => {
+    encryptPassword.value = generateStrongPassword();
+    encryptPassword.type = "text";
+
+    document
+      .querySelectorAll('.toggle-password[data-target="encryptPassword"]')
+      .forEach(button => {
+        button.classList.add("is-visible");
+        button.setAttribute("aria-label", "Hide password");
+      });
+
+    updatePasswordStrength();
+  });
+}
+
+if (copyPasswordButton) {
+  copyPasswordButton.addEventListener("click", async () => {
+    if (!encryptPassword.value) {
+      generatePasswordButton.click();
+    }
+
+    try {
+      await navigator.clipboard.writeText(encryptPassword.value);
+      copyPasswordButton.textContent = "Copied";
+
+      setTimeout(() => {
+        copyPasswordButton.textContent = "Copy";
+      }, 1500);
+    } catch {
+      copyPasswordButton.textContent = "Copy failed";
+
+      setTimeout(() => {
+        copyPasswordButton.textContent = "Copy";
+      }, 1500);
+    }
+  });
+}
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -168,6 +285,7 @@ function readUint64(data, offset) {
 
 function prepareDownload(blob, filename) {
   return {
+    blob,
     url: URL.createObjectURL(blob),
     filename
   };
@@ -199,21 +317,85 @@ function showResult(
   }
 }
 
-function downloadPending(download) {
-  if (!download) return;
+if (encryptDownload) {
+  encryptDownload.addEventListener("click", () => {
+    downloadPending(pendingEncryptDownload);
+  });
+}
 
+if (decryptDownload) {
+  decryptDownload.addEventListener("click", () => {
+    downloadPending(pendingDecryptDownload);
+  });
+}
+
+if (encryptZipDownload) {
+  encryptZipDownload.addEventListener("click", async () => {
+    if (!pendingEncryptDownload?.blob) return;
+
+    if (typeof JSZip === "undefined") {
+      console.error("JSZip is not available.");
+      return;
+    }
+
+    const zip = new JSZip();
+
+    zip.file(
+      pendingEncryptDownload.filename,
+      pendingEncryptDownload.blob
+    );
+
+    zip.file(
+      "password.txt",
+      encryptPassword.value
+    );
+
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: {
+        level: 6
+      }
+    });
+
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download =
+      pendingEncryptDownload.filename + ".zip";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  });
+}
+
+function downloadPending(download) {
+  if (!download || !download.blob) return;
+
+  const url = URL.createObjectURL(download.blob);
   const link = document.createElement("a");
 
-  link.href = download.url;
-  link.download = download.filename;
+  const dot = download.filename.lastIndexOf(".");
+  const base = dot > 0 ? download.filename.slice(0, dot) : download.filename;
+  const ext = dot > 0 ? download.filename.slice(dot) : "";
+
+  download.counter = (download.counter || 0) + 1;
+
+  link.href = url;
+  link.download =
+    download.counter === 1
+      ? download.filename
+      : `${base} (${download.counter})${ext}`;
 
   document.body.appendChild(link);
   link.click();
   link.remove();
 
-  setTimeout(() => {
-    URL.revokeObjectURL(download.url);
-  }, 60000);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 async function decryptSFC1(data, password) {
@@ -547,39 +729,58 @@ encryptButton.addEventListener(
         }
       );
 
-      const encryptedName =
-        file.name.includes(".")
-          ? file.name.substring(
-              0,
-              file.name.lastIndexOf(".")
-            )
-          : file.name;
+        const baseName =
+          file.name.includes(".")
+            ? file.name.substring(
+                0,
+                file.name.lastIndexOf(".")
+              )
+            : file.name;
 
-      showResult(
-        encryptResult,
-        encryptResultName,
-        encryptResultSize,
-        output,
-        encryptedName,
-        "encrypt"
-      );
+        let selectedExtension =
+          encryptExtension?.value || ".sfc3";
 
-      encryptStatus.textContent =
-        "Encryption complete.";
+        if (selectedExtension === "none") {
+          selectedExtension = "";
+        } else if (selectedExtension === "custom") {
+          selectedExtension =
+            customExtension?.value.trim() || ".sfc3";
 
-      warningModal.classList.remove(
-        "hidden"
-      );
-    } catch (error) {
-      console.error(error);
+          if (!selectedExtension.startsWith(".")) {
+            selectedExtension = "." + selectedExtension;
+          }
+        }
 
-      encryptStatus.textContent =
-        "Encryption failed.";
-    } finally {
-      encryptButton.disabled = false;
+        const encryptedName =
+          baseName + selectedExtension;
+
+        showResult(
+          encryptResult,
+          encryptResultName,
+          encryptResultSize,
+          output,
+          encryptedName,
+          "encrypt"
+        );
+
+        encryptStatus.textContent =
+          "Encryption complete.";
+
+        if (selectedExtension === "") {
+          warningModal.classList.remove(
+            "hidden"
+          );
+        }
+      } catch (error) {
+        console.error(error);
+
+        encryptStatus.textContent =
+          "Encryption failed.";
+      } finally {
+        encryptButton.disabled = false;
+      }
     }
-  }
-);
+  );
 
 decryptButton.addEventListener(
   "click",
@@ -888,33 +1089,7 @@ decryptTab.addEventListener(
   }
 );
 
-document
-  .querySelectorAll(
-    ".toggle-password"
-  )
-  .forEach(button => {
-    button.addEventListener(
-      "click",
-      () => {
-        const input =
-          document.getElementById(
-            button.dataset.target
-          );
 
-        if (
-          input.type === "password"
-        ) {
-          input.type = "text";
-          button.textContent =
-            "Hide";
-        } else {
-          input.type = "password";
-          button.textContent =
-            "Show";
-        }
-      }
-    );
-  });
 
 closeWarning.addEventListener(
   "click",
@@ -937,3 +1112,353 @@ warningModal.addEventListener(
     }
   }
 );
+
+
+
+document
+  .querySelectorAll(".toggle-password")
+  .forEach(button => {
+    button.addEventListener("click", () => {
+      const input =
+        document.getElementById(
+          button.dataset.target
+        );
+
+      const visible =
+        input.type === "text";
+
+      input.type =
+        visible ? "password" : "text";
+
+      button.classList.toggle(
+        "is-visible",
+        !visible
+      );
+
+      button.setAttribute(
+        "aria-label",
+        visible
+          ? "Show password"
+          : "Hide password"
+      );
+    });
+  });
+
+function formatFileModified(date) {
+  if (!date) return "—";
+
+  return new Date(date).toLocaleString([], {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+}
+
+function showFileMetadata(file, type) {
+  if (!file) return;
+
+  const prefix = type === "encrypt"
+    ? "encrypt"
+    : "decrypt";
+
+  const panel =
+    document.getElementById(`${prefix}Metadata`);
+
+  const name =
+    document.getElementById(`${prefix}MetaName`);
+
+  const fileType =
+    document.getElementById(`${prefix}MetaType`);
+
+  const size =
+    document.getElementById(`${prefix}MetaSize`);
+
+  const modified =
+    document.getElementById(`${prefix}MetaModified`);
+
+  if (!panel) return;
+
+  if (name) name.textContent = file.name || "—";
+
+  if (fileType) {
+    fileType.textContent =
+      file.type || "Unknown";
+  }
+
+  if (size) {
+    size.textContent =
+      formatBytes(file.size);
+  }
+
+  if (modified) {
+    modified.textContent =
+      formatFileModified(file.lastModified);
+  }
+
+  panel.classList.remove("hidden");
+}
+
+if (encryptFile) {
+  encryptFile.addEventListener("change", () => {
+    showFileMetadata(
+      encryptFile.files[0],
+      "encrypt"
+    );
+  });
+}
+
+if (decryptFile) {
+  decryptFile.addEventListener("change", () => {
+    showFileMetadata(
+      decryptFile.files[0],
+      "decrypt"
+    );
+  });
+}
+
+if (encryptFile) {
+  encryptFile.addEventListener("change", () => {
+    const file = encryptFile.files[0];
+    const panel =
+      document.getElementById("encryptSensitivePanel");
+
+    if (panel) {
+      panel.classList.add("hidden");
+    }
+  });
+}
+
+const encryptSensitiveMetadata =
+  document.getElementById(
+    "encryptSensitiveMetadata"
+  );
+
+const encryptSensitivePanel =
+  document.getElementById(
+    "encryptSensitivePanel"
+  );
+
+if (
+  encryptSensitiveMetadata &&
+  encryptSensitivePanel
+) {
+  encryptSensitiveMetadata.addEventListener(
+    "change",
+    () => {
+      encryptSensitivePanel.classList.toggle(
+        "hidden",
+        !encryptSensitiveMetadata.checked
+      );
+    }
+  );
+}
+
+/* Sensitive metadata auto-detection */
+async function detectSensitiveMetadata(file) {
+  const content =
+    document.getElementById("sensitiveMetadataContent");
+
+  if (!content || !file) return;
+
+  content.innerHTML =
+    "<p>Detecting metadata...</p>";
+
+  const rows = [];
+
+  const add = (label, value) => {
+    if (
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    ) {
+      const safeLabel =
+        String(label)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+      const safeValue =
+        String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+      rows.push(
+        `<div><span>${safeLabel}</span><strong>${safeValue}</strong></div>`
+      );
+    }
+  };
+
+  add("Filename", file.name);
+  add("MIME type", file.type || "Unknown");
+  add("Size", formatBytes(file.size));
+  add(
+    "Last modified",
+    new Date(file.lastModified).toLocaleString()
+  );
+
+  const type =
+    (file.type || "").toLowerCase();
+
+  const name =
+    file.name.toLowerCase();
+
+  const isImage =
+    type.startsWith("image/") ||
+    /\.(jpg|jpeg|png|gif|webp|tif|tiff|heic|heif|avif|bmp|ico)$/i.test(name);
+
+  let metadataFound = false;
+
+  if (
+    isImage &&
+    typeof exifr !== "undefined"
+  ) {
+    try {
+      const metadata =
+        await exifr.parse(file, {
+          tiff: true,
+          exif: true,
+          gps: true,
+          iptc: true,
+          icc: true,
+          xmp: true,
+          jfif: true,
+          ihdr: true,
+          translateValues: false
+        });
+
+      if (
+        metadata &&
+        typeof metadata === "object"
+      ) {
+        for (
+          const [key, value]
+          of Object.entries(metadata)
+        ) {
+          if (
+            value === undefined ||
+            value === null ||
+            value === ""
+          ) {
+            continue;
+          }
+
+          if (
+            Array.isArray(value)
+          ) {
+            add(
+              key,
+              value.join(", ")
+            );
+          } else if (
+            typeof value === "object"
+          ) {
+            add(
+              key,
+              JSON.stringify(value)
+            );
+          } else {
+            add(key, value);
+          }
+
+          metadataFound = true;
+        }
+      }
+    } catch (error) {
+      console.error(
+        "exifr metadata error:",
+        error
+      );
+
+      add(
+        "Metadata parser",
+        "Unable to read all image metadata"
+      );
+    }
+  }
+
+  /*
+   * Basic format detection for non-images.
+   * We intentionally do not claim that these
+   * formats have been completely parsed.
+   */
+  if (!isImage) {
+    const buffer =
+      new Uint8Array(
+        await file.arrayBuffer()
+      );
+
+    let detected = "Unknown";
+
+    const startsWith = bytes =>
+      bytes.every(
+        (value, index) =>
+          buffer[index] === value
+      );
+
+    if (
+      startsWith([
+        0x50, 0x4B, 0x03, 0x04
+      ])
+    ) {
+      detected = "ZIP";
+    } else if (
+      startsWith([
+        0x25, 0x50, 0x44, 0x46
+      ])
+    ) {
+      detected = "PDF";
+    } else if (
+      startsWith([
+        0x1F, 0x8B
+      ])
+    ) {
+      detected = "GZIP";
+    } else if (
+      buffer.length >= 12 &&
+      String.fromCharCode(
+        ...buffer.slice(4, 8)
+      ) === "ftyp"
+    ) {
+      detected = "ISO Base Media";
+    }
+
+    add(
+      "Detected format",
+      detected
+    );
+  }
+
+  if (!metadataFound && rows.length === 4) {
+    add(
+      "Metadata",
+      "No readable embedded metadata detected"
+    );
+  }
+
+  content.innerHTML =
+    rows.join("");
+}
+
+if (
+  encryptSensitiveMetadata &&
+  encryptSensitivePanel
+) {
+  encryptSensitiveMetadata.addEventListener(
+    "change",
+    async () => {
+      if (
+        encryptSensitiveMetadata.checked
+      ) {
+        const file =
+          encryptFile?.files?.[0];
+
+        if (file) {
+          await detectSensitiveMetadata(
+            file
+          );
+        }
+      }
+    }
+  );
+}
+

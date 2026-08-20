@@ -2,6 +2,9 @@
   "name": "securefilecrypt",
   "private": true,
   "dependencies": {
-    "argon2-browser": "1.18.0"
+    "@uswriting/exiftool": "^1.0.9",
+    "argon2-browser": "1.18.0",
+    "exifr": "^7.1.3",
+    "fflate": "^0.8.3"
   }
 }

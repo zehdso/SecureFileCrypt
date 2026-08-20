@@ -6,6 +6,7 @@
   <meta name="description" content="Securely encrypt and decrypt files locally in your browser.">
   <title>SecureFileCrypt</title>
   <link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 
 <body>
@@ -30,6 +31,25 @@
       <label for="encryptFile">File</label>
       <input id="encryptFile" type="file">
 
+      <div id="encryptMetadata" class="metadata-panel hidden">
+        <div><span>Filename</span><strong id="encryptMetaName">—</strong></div>
+        <div><span>Type</span><strong id="encryptMetaType">—</strong></div>
+        <div><span>Size</span><strong id="encryptMetaSize">—</strong></div>
+        <div><span>Modified</span><strong id="encryptMetaModified">—</strong></div>
+
+        <label class="metadata-sensitive">
+          <span>Show sensitive metadata</span>
+          <span class="modern-toggle">
+            <input id="encryptSensitiveMetadata" type="checkbox">
+            <span class="modern-toggle-track"></span>
+          </span>
+        </label>
+
+        <div id="encryptSensitivePanel" class="hidden">
+          <div id="sensitiveMetadataContent"><p>No sensitive metadata detected.</p></div>
+        </div>
+      </div>
+
       <label for="encryptPassword">Password</label>
 
       <div class="password-box">
@@ -39,9 +59,51 @@
           placeholder="Enter password"
           autocomplete="new-password"
         >
-        <button type="button" class="toggle-password" data-target="encryptPassword">
-          Show
+        <button type="button" class="toggle-password" data-target="encryptPassword" aria-label="Show password">
+          <span class="eye-icon" aria-hidden="true">
+  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+  <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m3 3 18 18"/>
+    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
+    <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-3.1 4.3"/>
+    <path d="M6.6 6.6C3.7 8.5 2 12 2 12s3.5 8 10 8a10.8 10.8 0 0 0 2.1-.2"/>
+  </svg>
+</span>
         </button>
+      </div>
+
+      <div class="password-tools">
+        <button type="button" id="generatePassword">Generate strong password</button>
+        <button type="button" id="copyPassword">Copy</button>
+      </div>
+
+      <div id="passwordStrength" class="password-strength hidden">
+        <div class="password-strength-bar">
+          <span id="passwordStrengthFill"></span>
+        </div>
+        <span id="passwordStrengthText">Password strength</span>
+      </div>
+
+      <div class="extension-option">
+        <label for="encryptExtension">Output extension <span>(optional)</span></label>
+        <select id="encryptExtension">
+          <option value=".sfc3" selected>.sfc3 — SecureFileCrypt</option>
+          <option value=".secure">.secure</option>
+          <option value=".encrypted">.encrypted</option>
+          <option value=".enc">.enc</option>
+          <option value="custom">Custom extension...</option>
+        </select>
+        <input
+          id="customExtension"
+          class="hidden"
+          type="text"
+          placeholder="e.g. .backup"
+          maxlength="20"
+          autocomplete="off"
+        >
       </div>
 
       <button id="encryptButton" class="primary-button">
@@ -56,9 +118,20 @@
           <span id="encryptResultSize"></span>
         </div>
 
-        <button id="encryptDownload" class="download-button">
-          Download
-        </button>
+        <div class="download-options">
+          <button id="encryptDownload" class="download-button">
+            Download encrypted file
+          </button>
+
+          <button id="encryptZipDownload" class="download-button secondary-download-button">
+            Download file + password ZIP
+          </button>
+
+          <p class="download-warning">
+            The ZIP contains both the encrypted file and its password.
+            Anyone with the ZIP can decrypt the file.
+          </p>
+        </div>
       </div>
     </section>
 
@@ -71,6 +144,13 @@
       <label for="decryptFile">Encrypted file</label>
       <input id="decryptFile" type="file">
 
+      <div id="decryptMetadata" class="metadata-panel hidden">
+        <div><span>Filename</span><strong id="decryptMetaName">—</strong></div>
+        <div><span>Type</span><strong id="decryptMetaType">—</strong></div>
+        <div><span>Size</span><strong id="decryptMetaSize">—</strong></div>
+        <div><span>Modified</span><strong id="decryptMetaModified">—</strong></div>
+      </div>
+
       <label for="decryptPassword">Password</label>
 
       <div class="password-box">
@@ -80,8 +160,19 @@
           placeholder="Enter password"
           autocomplete="current-password"
         >
-        <button type="button" class="toggle-password" data-target="decryptPassword">
-          Show
+        <button type="button" class="toggle-password" data-target="decryptPassword" aria-label="Show password">
+          <span class="eye-icon" aria-hidden="true">
+  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+  <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m3 3 18 18"/>
+    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
+    <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-3.1 4.3"/>
+    <path d="M6.6 6.6C3.7 8.5 2 12 2 12s3.5 8 10 8a10.8 10.8 0 0 0 2.1-.2"/>
+  </svg>
+</span>
         </button>
       </div>
 
@@ -297,6 +388,9 @@
   </div>
 
   <script src="lib/argon2-bundled.min.js"></script>
+  <script src="lib/exifr.min.js"></script>
+  <script src="lib/fflate.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
+
