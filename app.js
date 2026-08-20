@@ -1462,3 +1462,16 @@ if (
   );
 }
 
+
+if (encryptExtension && customExtension) {
+  encryptExtension.addEventListener("change", () => {
+    customExtension.classList.toggle(
+      "hidden",
+      encryptExtension.value !== "custom"
+    );
+
+    if (encryptExtension.value !== "custom") {
+      customExtension.value = "";
+    }
+  });
+}

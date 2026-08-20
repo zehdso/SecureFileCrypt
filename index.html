@@ -77,7 +77,13 @@
 
       <div class="password-tools">
         <button type="button" id="generatePassword">Generate strong password</button>
-        <button type="button" id="copyPassword">Copy</button>
+        <button type="button" id="copyPassword">
+          <svg class="copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+            <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+          </svg>
+          <span>Copy</span>
+        </button>
       </div>
 
       <div id="passwordStrength" class="password-strength hidden">
@@ -91,6 +97,7 @@
         <label for="encryptExtension">Output extension <span>(optional)</span></label>
         <select id="encryptExtension">
           <option value=".sfc3" selected>.sfc3 — SecureFileCrypt</option>
+          <option value="none">Without extension</option>
           <option value=".secure">.secure</option>
           <option value=".encrypted">.encrypted</option>
           <option value=".enc">.enc</option>
