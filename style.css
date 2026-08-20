@@ -974,3 +974,239 @@ input[type="file"] {
   gap: 7px;
 }
 
+
+/* Desktop / laptop interface */
+@media (min-width: 901px) {
+  body {
+    padding: 32px 24px 60px;
+  }
+
+  .container,
+  main {
+    max-width: 1180px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .encrypt-decrypt,
+  .forms,
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  .encrypt-decrypt > *,
+  .forms > *,
+  .tool-grid > * {
+    min-width: 0;
+  }
+
+  .information {
+    max-width: 1180px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) {
+  body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .encrypt-decrypt,
+  .forms,
+  .tool-grid {
+    gap: 18px;
+  }
+}
+
+
+/* Laptop / desktop layout */
+@media (min-width: 901px) {
+  .app {
+    width: min(92%, 900px);
+    padding: 48px 0 70px;
+  }
+
+  .header {
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-size: 32px;
+  }
+
+  .tabs {
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 28px;
+  }
+
+  .page {
+    padding: 34px;
+    border-radius: 20px;
+  }
+
+  .page h2 {
+    font-size: 24px;
+  }
+
+  .description {
+    max-width: 680px;
+  }
+
+  .password-box input[type="password"],
+  .password-box input[type="text"] {
+    height: 52px;
+    font-size: 16px;
+  }
+
+  .password-box {
+    height: 52px;
+  }
+
+  .toggle-password {
+    height: 52px;
+    flex-basis: 72px;
+    width: 72px;
+  }
+
+  .extension-option select,
+  .extension-option input {
+    min-height: 50px;
+  }
+
+  .primary-button,
+  .download-button {
+    min-height: 52px;
+  }
+
+  .information {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+
+/* Desktop information grid */
+@media (min-width: 901px) {
+  .information {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+
+  .information > .info-block {
+    grid-column: span 6;
+    margin: 0;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .information > .info-block:first-child,
+  .information > .info-block:nth-child(2) {
+    grid-column: span 6;
+  }
+
+  .information > .info-block:nth-child(3),
+  .information > .info-block:nth-child(4),
+  .information > .info-block:nth-child(5) {
+    grid-column: span 4;
+  }
+}
+
+
+/* Desktop information hierarchy */
+@media (min-width: 901px) {
+  .information {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .information > .info-block {
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+    height: 100%;
+  }
+
+  /* Main information boxes */
+  .information > .info-block:nth-child(1) {
+    grid-column: span 12;
+  }
+
+  /* Two horizontal boxes */
+  .information > .info-block:nth-child(2),
+  .information > .info-block:nth-child(3) {
+    grid-column: span 6;
+  }
+
+  /* Important to know becomes a main-width box */
+  .information > .info-block:nth-child(4) {
+    grid-column: span 12;
+  }
+
+  /* Privacy */
+  .information > .info-block:nth-child(5) {
+    grid-column: span 12;
+  }
+}
+
+
+@media (min-width: 901px) {
+  .information > .info-block:nth-child(1),
+  .information > .info-block:nth-child(2) {
+    grid-column: span 6;
+  }
+
+  .information > .info-block:nth-child(3),
+  .information > .info-block:nth-child(4) {
+    grid-column: span 12;
+  }
+}
+
+
+@media (min-width: 901px) {
+  .information > .info-block:nth-child(3) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .information > .info-block:nth-child(3) > h2 {
+    grid-column: 1 / -1;
+  }
+
+  .information > .info-block:nth-child(3) > .important-item:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+
+@media (min-width: 901px) {
+  .information > .info-block:nth-child(3) .important-list {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .information > .info-block:nth-child(3) .important-list li {
+    width: auto;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .information > .info-block:nth-child(3) .important-list li:last-child {
+    grid-column: auto;
+  }
+}
