@@ -1210,3 +1210,213 @@ input[type="file"] {
     grid-column: auto;
   }
 }
+
+/* Automatic dark theme */
+@media (prefers-color-scheme: dark) {
+
+  body {
+    background: #000;
+    color: #fff;
+  }
+
+  .tabs {
+    background: #181818;
+  }
+
+  .tab {
+    color: #aaa;
+  }
+
+  .tab.active {
+    background: #fff;
+    color: #000;
+    box-shadow: 0 1px 4px rgba(255, 255, 255, 0.08);
+  }
+
+  .page,
+  .info-block,
+  .modal-card {
+    background: #0a0a0a;
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .header p,
+  .description,
+  .result span,
+  .password-strength #passwordStrengthText,
+  .extension-option label span {
+    color: #999;
+  }
+
+  input[type="file"],
+  .password-box input[type="password"],
+  .password-box input[type="text"],
+  .extension-option select,
+  #customExtension {
+    background: #111;
+    color: #fff;
+    border-color: #333;
+  }
+
+  input::placeholder,
+  #customExtension::placeholder {
+    color: #777;
+  }
+
+  .toggle-password {
+    background: #111;
+    color: #fff;
+    border-color: #333;
+  }
+
+  .toggle-password:hover {
+    background: #1a1a1a;
+  }
+
+  .password-tools button {
+    background: #111;
+    color: #fff;
+    border-color: #333;
+  }
+
+  .password-tools button:hover {
+    background: #1a1a1a;
+    border-color: #444;
+  }
+
+  .password-strength-bar {
+    background: #333;
+  }
+
+  .status,
+  .step p,
+  .security-item p,
+  .info-block > p,
+  .important-list {
+    color: #aaa;
+  }
+
+  .result {
+    border-color: #333;
+    background: #0d0d0d;
+  }
+
+  .step,
+  .security-item {
+    border-color: #292929;
+  }
+
+  .security-item,
+  .important-list li {
+    background: #111;
+    border-color: #292929;
+  }
+
+  .important-list li {
+    color: #aaa;
+  }
+
+  .important-list strong {
+    color: #fff;
+  }
+
+  .step-number {
+    background: #fff;
+    color: #000;
+  }
+
+  .metadata-panel,
+  #sensitiveMetadataContent {
+    background: #0d0d0d;
+    border-color: #292929;
+  }
+
+  .metadata-panel > div,
+  #sensitiveMetadataContent > div {
+    border-color: #292929;
+  }
+
+  .metadata-panel > div span,
+  #sensitiveMetadataContent > div span,
+  #sensitiveMetadataContent > p {
+    color: #888;
+  }
+
+  .metadata-sensitive {
+    background: #0d0d0d;
+    border-color: #292929;
+    color: #fff;
+  }
+
+  .metadata-sensitive > span:first-child {
+    color: #fff;
+  }
+
+  .modern-toggle-track {
+    background: #333;
+  }
+
+  .modern-toggle-track::after {
+    background: #fff;
+  }
+
+  .modern-toggle input:checked + .modern-toggle-track {
+    background: #fff;
+  }
+
+  .modern-toggle input:checked + .modern-toggle-track::after {
+    background: #000;
+  }
+
+  .primary-button {
+    background: #fff;
+    color: #000;
+  }
+
+  .download-button {
+    background: #181818;
+    color: #fff;
+  }
+
+  .modal {
+    background: rgba(0, 0, 0, 0.75);
+  }
+
+  .modal-card p {
+    color: #aaa;
+  }
+
+  .information {
+    color: #fff;
+  }
+
+  .extension-option label {
+    color: #fff;
+  }
+
+  .extension-option select:focus,
+  #customExtension:focus {
+    border-color: #666;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+  }
+
+  .extension-option select {
+    background-color: #111;
+    color: #fff;
+  }
+
+  .copy-icon {
+    color: #aaa;
+  }
+
+  .copy-icon:hover {
+    color: #fff;
+  }
+
+  select,
+  input {
+    color-scheme: dark;
+  }
+}
+
