@@ -40,7 +40,7 @@ const closeWarning = document.getElementById("closeWarning");
 
 const OLD_MAGIC = "SFC1";
 const OLD_CHUNK_MAGIC = "SFC2";
-const MAGIC = new TextEncoder().encode("SFC3");
+const MAGIC = new TextEncoder().encode("SFC4");
 
 const SALT_SIZE = 16;
 const IV_SIZE = 12;
@@ -645,16 +645,75 @@ encryptButton.addEventListener(
           file.name
         );
 
+      /*
+       * SFC4 metadata:
+       * filename + original size + chunk size
+       * are encrypted and authenticated.
+       *
+       * The filename is therefore never stored
+       * in plaintext inside the SFC4 file.
+       */
+      const metadataIv =
+        crypto.getRandomValues(
+          new Uint8Array(IV_SIZE)
+        );
+
+      const metadataPlaintext = new Uint8Array(
+        4 +
+        4 +
+        8 +
+        originalName.length
+      );
+
+      let metadataOffset = 0;
+
+      metadataPlaintext.set(
+        writeUint32(originalName.length),
+        metadataOffset
+      );
+
+      metadataOffset += 4;
+
+      metadataPlaintext.set(
+        writeUint32(CHUNK_SIZE),
+        metadataOffset
+      );
+
+      metadataOffset += 4;
+
+      metadataPlaintext.set(
+        writeUint64(file.size),
+        metadataOffset
+      );
+
+      metadataOffset += 8;
+
+      metadataPlaintext.set(
+        originalName,
+        metadataOffset
+      );
+
+      const encryptedMetadata =
+        new Uint8Array(
+          await crypto.subtle.encrypt(
+            {
+              name: "AES-GCM",
+              iv: metadataIv
+            },
+            key,
+            metadataPlaintext
+          )
+        );
+
       const header = [
         MAGIC,
         salt,
         baseIv,
+        metadataIv,
         writeUint32(
-          originalName.length
+          encryptedMetadata.length
         ),
-        writeUint32(CHUNK_SIZE),
-        writeUint64(file.size),
-        originalName
+        encryptedMetadata
       ];
 
       const encryptedChunks = [];
@@ -738,13 +797,13 @@ encryptButton.addEventListener(
             : file.name;
 
         let selectedExtension =
-          encryptExtension?.value || ".sfc3";
+          encryptExtension?.value || ".sfc4";
 
         if (selectedExtension === "none") {
           selectedExtension = "";
         } else if (selectedExtension === "custom") {
           selectedExtension =
-            customExtension?.value.trim() || ".sfc3";
+            customExtension?.value.trim() || ".sfc4";
 
           if (!selectedExtension.startsWith(".")) {
             selectedExtension = "." + selectedExtension;
@@ -839,6 +898,256 @@ decryptButton.addEventListener(
             data,
             password
           );
+      } else if (
+        magic === "SFC4"
+      ) {
+        let offset = 4;
+
+        const salt =
+          data.slice(
+            offset,
+            offset + SALT_SIZE
+          );
+
+        offset += SALT_SIZE;
+
+        const baseIv =
+          data.slice(
+            offset,
+            offset + IV_SIZE
+          );
+
+        offset += IV_SIZE;
+
+        const metadataIv =
+          data.slice(
+            offset,
+            offset + IV_SIZE
+          );
+
+        offset += IV_SIZE;
+
+        const metadataLength =
+          readUint32(
+            data,
+            offset
+          );
+
+        offset += 4;
+
+        if (
+          metadataLength < 16 ||
+          metadataLength > 16 * 1024 * 1024 ||
+          offset + metadataLength > data.length
+        ) {
+          throw new Error(
+            "Invalid encrypted metadata."
+          );
+        }
+
+        const encryptedMetadata =
+          data.slice(
+            offset,
+            offset + metadataLength
+          );
+
+        offset += metadataLength;
+
+        decryptStatus.textContent =
+          "Deriving secure key...";
+
+        const key =
+          await deriveArgon2Key(
+            password,
+            salt
+          );
+
+        let metadata;
+
+        try {
+          metadata =
+            new Uint8Array(
+              await crypto.subtle.decrypt(
+                {
+                  name: "AES-GCM",
+                  iv: metadataIv
+                },
+                key,
+                encryptedMetadata
+              )
+            );
+        } catch {
+          throw new Error(
+            "Incorrect password or corrupted file."
+          );
+        }
+
+        if (metadata.length < 16) {
+          throw new Error(
+            "Invalid encrypted metadata."
+          );
+        }
+
+        let metadataOffset = 0;
+
+        const nameLength =
+          readUint32(
+            metadata,
+            metadataOffset
+          );
+
+        metadataOffset += 4;
+
+        const chunkSize =
+          readUint32(
+            metadata,
+            metadataOffset
+          );
+
+        metadataOffset += 4;
+
+        const originalSize =
+          readUint64(
+            metadata,
+            metadataOffset
+          );
+
+        metadataOffset += 8;
+
+        if (
+          nameLength > metadata.length - metadataOffset
+        ) {
+          throw new Error(
+            "Invalid filename metadata."
+          );
+        }
+
+        if (
+          chunkSize === 0 ||
+          chunkSize >
+            64 * 1024 * 1024
+        ) {
+          throw new Error(
+            "Invalid chunk size."
+          );
+        }
+
+        const originalName =
+          new TextDecoder().decode(
+            metadata.slice(
+              metadataOffset,
+              metadataOffset + nameLength
+            )
+          );
+
+        metadataOffset += nameLength;
+
+        if (
+          metadataOffset !== metadata.length
+        ) {
+          throw new Error(
+            "Invalid encrypted metadata."
+          );
+        }
+
+        const chunkCount =
+          Math.ceil(
+            originalSize /
+              chunkSize
+          );
+
+        const decryptedChunks = [];
+
+        for (
+          let index = 0;
+          index < chunkCount;
+          index++
+        ) {
+          const plaintextSize =
+            index ===
+            chunkCount - 1
+              ? originalSize -
+                index * chunkSize
+              : chunkSize;
+
+          const encryptedSize =
+            plaintextSize + 16;
+
+          if (
+            offset +
+              encryptedSize >
+            data.length
+          ) {
+            throw new Error(
+              "Encrypted file is incomplete."
+            );
+          }
+
+          const encrypted =
+            data.slice(
+              offset,
+              offset +
+                encryptedSize
+            );
+
+          offset += encryptedSize;
+
+          const iv =
+            createChunkIv(
+              baseIv,
+              index
+            );
+
+          const decrypted =
+            await crypto.subtle.decrypt(
+              {
+                name: "AES-GCM",
+                iv
+              },
+              key,
+              encrypted
+            );
+
+          decryptedChunks.push(
+            new Uint8Array(
+              decrypted
+            )
+          );
+
+          const percent =
+            Math.round(
+              ((index + 1) /
+                chunkCount) *
+                100
+            );
+
+          decryptStatus.textContent =
+            `Decrypting... ${percent}%`;
+
+          await new Promise(
+            resolve =>
+              setTimeout(
+                resolve,
+                0
+              )
+          );
+        }
+
+        if (
+          offset !== data.length
+        ) {
+          throw new Error(
+            "Invalid encrypted file."
+          );
+        }
+
+        result = {
+          blob: new Blob(
+            decryptedChunks
+          ),
+          filename:
+            originalName
+        };
       } else if (
         magic === "SFC3"
       ) {
@@ -1036,24 +1345,6 @@ decryptButton.addEventListener(
     } finally {
       decryptButton.disabled = false;
     }
-  }
-);
-
-encryptDownload.addEventListener(
-  "click",
-  () => {
-    downloadPending(
-      pendingEncryptDownload
-    );
-  }
-);
-
-decryptDownload.addEventListener(
-  "click",
-  () => {
-    downloadPending(
-      pendingDecryptDownload
-    );
   }
 );
 
