@@ -1594,6 +1594,66 @@ if (
   );
 }
 
+/*
+ * Office metadata extraction.
+ * DOCX/XLSX/PPTX are ZIP packages containing XML properties.
+ * Everything found in the core-properties XML is displayed.
+ */
+async function extractOfficeMetadata(file, add) {
+  if (typeof JSZip === "undefined") {
+    throw new Error("JSZip is not available.");
+  }
+
+  const zip = await JSZip.loadAsync(file);
+
+  const propertyFiles = [
+    "docProps/core.xml",
+    "docProps/app.xml",
+    "docProps/custom.xml"
+  ];
+
+  let found = false;
+
+  for (const path of propertyFiles) {
+    const entry = zip.file(path);
+
+    if (!entry) continue;
+
+    const xml = await entry.async("text");
+    const document = new DOMParser().parseFromString(
+      xml,
+      "application/xml"
+    );
+
+    if (document.querySelector("parsererror")) {
+      continue;
+    }
+
+    const elements = Array.from(document.documentElement.children);
+
+    for (const element of elements) {
+      const value = element.textContent?.trim();
+
+      if (!value) continue;
+
+      const namespace =
+        element.namespaceURI || "unknown";
+
+      const localName =
+        element.localName || element.nodeName;
+
+      add(
+        `Office ${localName}`,
+        value
+      );
+
+      found = true;
+    }
+  }
+
+  return found;
+}
+
 /* Sensitive metadata auto-detection */
 async function detectSensitiveMetadata(file) {
   const content =
@@ -1773,6 +1833,33 @@ async function detectSensitiveMetadata(file) {
       add(
         "Metadata parser",
         "Unable to read PDF metadata"
+      );
+    }
+  }
+
+  /*
+   * Office metadata extraction.
+   */
+  const isOffice =
+    /\.(docx|xlsx|pptx)$/i.test(name);
+
+  if (isOffice) {
+    try {
+      const officeFound =
+        await extractOfficeMetadata(file, add);
+
+      if (officeFound) {
+        metadataFound = true;
+      }
+    } catch (error) {
+      console.error(
+        "Office metadata error:",
+        error
+      );
+
+      add(
+        "Metadata parser",
+        "Unable to read Office metadata"
       );
     }
   }
