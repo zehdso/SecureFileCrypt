@@ -1654,6 +1654,121 @@ async function extractOfficeMetadata(file, add) {
   return found;
 }
 
+/*
+ * Audio/video metadata extraction.
+ * MediaInfo.js runs locally in the browser through WebAssembly.
+ * full: true requests all internal metadata fields.
+ */
+async function extractQuickTimeLocation(file, add) {
+  const buffer = new Uint8Array(await file.arrayBuffer());
+  const text = new TextDecoder("latin1").decode(buffer);
+
+  const keys = [
+    "com.apple.quicktime.location.ISO6709",
+    "©xyz"
+  ];
+
+  for (const key of keys) {
+    const index = text.indexOf(key);
+
+    if (index === -1) continue;
+
+    const start = index + key.length;
+    const end = Math.min(start + 128, text.length);
+
+    let value = text
+      .slice(start, end)
+      .replace(/[^\x20-\x7E+\-./]/g, "")
+      .trim();
+
+    const match = value.match(
+      /[+-]\d{2,3}(?:\.\d+)?[+-]\d{2,3}(?:\.\d+)?(?:[+-]\d+(?:\.\d+)?)?\//
+    );
+
+    if (match) {
+      add("GPS Location", match[0]);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function extractMediaMetadata(file, add) {
+  if (typeof MediaInfo === "undefined") {
+    throw new Error("MediaInfo.js is not available.");
+  }
+
+  const mediaInfoFactory =
+    MediaInfo.mediaInfoFactory ||
+    MediaInfo.default ||
+    MediaInfo;
+
+  if (typeof mediaInfoFactory !== "function") {
+    throw new Error("MediaInfo factory is not available.");
+  }
+
+  const mediaInfo = await mediaInfoFactory({
+    format: "object",
+    full: true,
+    locateFile: () => "lib/MediaInfoModule.wasm"
+  });
+
+  const result = await mediaInfo.analyzeData(
+    () => file.size,
+    async (chunkSize, offset) => {
+      const buffer = await file.slice(
+        offset,
+        offset + chunkSize
+      ).arrayBuffer();
+
+      return new Uint8Array(buffer);
+    }
+  );
+
+  let found = false;
+
+  const addTrack = (track, type) => {
+    if (!track || typeof track !== "object") return;
+
+    for (const [key, value] of Object.entries(track)) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ""
+      ) {
+        continue;
+      }
+
+      const displayValue =
+        Array.isArray(value)
+          ? value.join(", ")
+          : typeof value === "object"
+            ? JSON.stringify(value)
+            : value;
+
+      add(`${type} ${key}`, displayValue);
+      found = true;
+    }
+  };
+
+  if (result && Array.isArray(result.media?.track)) {
+    for (const track of result.media.track) {
+      const type =
+        track["@type"] ||
+        "Media";
+
+      addTrack(track, type);
+    }
+  }
+
+  if (typeof mediaInfo.close === "function") {
+    mediaInfo.close();
+  }
+
+  return found;
+}
+
 /* Sensitive metadata auto-detection */
 async function detectSensitiveMetadata(file) {
   const content =
@@ -1710,6 +1825,43 @@ async function detectSensitiveMetadata(file) {
 
   let metadataFound = false;
 
+  /*
+   * Audio/video metadata extraction.
+   * MediaInfo.js handles supported media formats locally.
+   */
+  const isMedia =
+    type.startsWith("audio/") ||
+    type.startsWith("video/") ||
+    /\.(mp3|wav|flac|m4a|aac|ogg|opus|wma|mp4|m4v|mov|mkv|webm|avi|wmv|mpeg|mpg|3gp|3g2|ts|mts|m2ts)$/i.test(name);
+
+  if (isMedia) {
+    try {
+      const mediaFound =
+        await extractMediaMetadata(file, add);
+
+      if (mediaFound) {
+        metadataFound = true;
+      }
+
+      const locationFound =
+        await extractQuickTimeLocation(file, add);
+
+      if (locationFound) {
+        metadataFound = true;
+      }
+    } catch (error) {
+      console.error(
+        "MediaInfo metadata error:",
+        error
+      );
+
+      add(
+        "Metadata parser",
+        "Unable to read media metadata"
+      );
+    }
+  }
+
   if (
     isImage &&
     typeof exifr !== "undefined"
@@ -1727,6 +1879,149 @@ async function detectSensitiveMetadata(file) {
           ihdr: true,
           translateValues: false
         });
+
+      if (metadata && typeof metadata === "object") {
+        console.log("RAW GPS:", {
+          GPSLatitude: metadata.GPSLatitude,
+          GPSLatitudeRef: metadata.GPSLatitudeRef,
+          GPSLongitude: metadata.GPSLongitude,
+          GPSLongitudeRef: metadata.GPSLongitudeRef,
+          GPSAltitude: metadata.GPSAltitude,
+          GPSAltitudeRef: metadata.GPSAltitudeRef
+        });
+
+        if (typeof EXIF !== "undefined") {
+          EXIF.getData(file, function () {
+            const lat = EXIF.getTag(this, "GPSLatitude");
+            const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+            const lon = EXIF.getTag(this, "GPSLongitude");
+            const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+            const alt = EXIF.getTag(this, "GPSAltitude");
+
+            const gpsNumber = (v) => {
+              if (typeof v === "number") return v;
+              if (v && typeof v === "object") {
+                const n = Number(v.numerator);
+                const d = Number(v.denominator);
+                if (Number.isFinite(n) && Number.isFinite(d) && d)
+                  return n / d;
+              }
+              return Number(v);
+            };
+
+            const gpsDms = (v) => {
+              if (!v || !v.length) return NaN;
+              const a = v.map(gpsNumber);
+              if (!a.every(Number.isFinite)) return NaN;
+              return a[0] + a[1] / 60 + a[2] / 3600;
+            };
+
+            const latitude = gpsDms(lat);
+            const longitude = gpsDms(lon);
+            const altitude = gpsNumber(alt);
+
+            if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+              add(
+                "GPS Latitude",
+                String(latRef).toUpperCase() === "S" ? -latitude : latitude
+              );
+              add(
+                "GPS Longitude",
+                String(lonRef).toUpperCase() === "W" ? -longitude : longitude
+              );
+              if (Number.isFinite(altitude)) {
+                add("GPS Altitude", altitude);
+              }
+              metadataFound = true;
+            }
+          });
+        }
+
+        if (typeof ExifReader !== "undefined") {
+          try {
+            const tags = await ExifReader.load(file, {
+              expanded: true
+            });
+
+            const gps = tags.gps || {};
+            const latitude = Number(gps.Latitude);
+            const longitude = Number(gps.Longitude);
+            const altitude = Number(gps.Altitude);
+
+            if (
+              Number.isFinite(latitude) &&
+              Number.isFinite(longitude)
+            ) {
+              add("GPS Latitude", latitude);
+              add("GPS Longitude", longitude);
+
+              if (Number.isFinite(altitude)) {
+                add("GPS Altitude", altitude);
+              }
+
+              metadataFound = true;
+            }
+          } catch (gpsError) {
+            console.error("ExifReader GPS error:", gpsError);
+          }
+        }
+
+        const gpsLatitude = metadata.GPSLatitude;
+        const gpsLongitude = metadata.GPSLongitude;
+        const gpsLatitudeRef = metadata.GPSLatitudeRef;
+        const gpsLongitudeRef = metadata.GPSLongitudeRef;
+        const gpsAltitude = metadata.GPSAltitude;
+
+        const toNumber = (value) => {
+          if (typeof value === "number") return value;
+
+          const rational = (v) => {
+            if (v && typeof v === "object") {
+              const n = Number(v.numerator ?? v.num ?? v.value);
+              const d = Number(v.denominator ?? v.den ?? 1);
+              if (Number.isFinite(n) && Number.isFinite(d) && d !== 0)
+                return n / d;
+            }
+            return Number(v);
+          };
+
+          if (Array.isArray(value)) {
+            const nums = value.map(rational);
+            if (nums.every(Number.isFinite)) {
+              if (nums.length >= 3)
+                return nums[0] + nums[1] / 60 + nums[2] / 3600;
+              if (nums.length === 1) return nums[0];
+            }
+          }
+
+          return rational(value);
+        };
+
+        const latitude = toNumber(gpsLatitude);
+        const longitude = toNumber(gpsLongitude);
+        const altitude = toNumber(gpsAltitude);
+
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+          const finalLatitude =
+            String(gpsLatitudeRef).toUpperCase() === "S"
+              ? -Math.abs(latitude)
+              : Math.abs(latitude);
+
+          const finalLongitude =
+            String(gpsLongitudeRef).toUpperCase() === "W"
+              ? -Math.abs(longitude)
+              : Math.abs(longitude);
+
+          add("GPS Latitude", finalLatitude);
+          add("GPS Longitude", finalLongitude);
+
+          if (Number.isFinite(altitude)) {
+            add("GPS Altitude", altitude);
+          }
+
+          metadataFound = true;
+        }
+      }
 
       if (
         metadata &&
@@ -1889,6 +2184,46 @@ async function detectSensitiveMetadata(file) {
       ])
     ) {
       detected = "ZIP";
+    } else if (
+      startsWith([
+        0x49, 0x44, 0x33
+      ])
+    ) {
+      detected = "MP3";
+    } else if (
+      buffer.length >= 2 &&
+      buffer[0] === 0xFF &&
+      (buffer[1] & 0xE0) === 0xE0
+    ) {
+      detected = "MPEG Audio";
+    } else if (
+      startsWith([
+        0x52, 0x49, 0x46, 0x46
+      ]) &&
+      buffer.length >= 12 &&
+      String.fromCharCode(
+        ...buffer.slice(8, 12)
+      ) === "WAVE"
+    ) {
+      detected = "WAV";
+    } else if (
+      startsWith([
+        0x4F, 0x67, 0x67, 0x53
+      ])
+    ) {
+      detected = "OGG";
+    } else if (
+      startsWith([
+        0x66, 0x4C, 0x61, 0x43
+      ])
+    ) {
+      detected = "FLAC";
+    } else if (
+      startsWith([
+        0x1A, 0x45, 0xDF, 0xA3
+      ])
+    ) {
+      detected = "Matroska/WebM";
     } else if (
       startsWith([
         0x25, 0x50, 0x44, 0x46
