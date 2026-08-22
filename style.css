@@ -193,6 +193,8 @@ input[type="file"] {
   justify-content: center;
   padding: 20px;
   background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .modal-card {
@@ -1418,5 +1420,30 @@ input[type="file"] {
   input {
     color-scheme: dark;
   }
+}
+
+
+#warningModal {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body:has(#warningModal:not(.hidden)) .app {
+  filter: blur(8px);
+}
+
+#warningModal {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+
+.app {
+  filter: blur(0);
+  transition: filter 0.25s ease;
+}
+
+body:has(#warningModal:not(.hidden)) .app {
+  filter: blur(8px);
 }
 

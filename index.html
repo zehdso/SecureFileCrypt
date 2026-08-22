@@ -25,7 +25,7 @@
     <section id="encryptPage" class="page">
       <h2>Encrypt a file</h2>
       <p class="description">
-        Turn any file into a password-protected encrypted file.
+        Transform your files into encrypted data, protected by your password.
       </p>
 
       <label for="encryptFile">File</label>
@@ -256,8 +256,9 @@
           <div>
             <h3>Encrypt the file</h3>
             <p>
-              AES-256-GCM encrypts the file and authenticates each encrypted
-              chunk, helping detect incorrect passwords or modified data.
+              AES-256-GCM encrypts the file in authenticated chunks and also
+              protects the filename and file metadata, helping detect incorrect
+              passwords or modified data.
             </p>
           </div>
         </div>
@@ -289,8 +290,8 @@
         <div class="security-item">
           <h3>AES-256-GCM</h3>
           <p>
-            AES with a 256-bit key provides strong encryption, while GCM also
-            provides authentication so modified encrypted data can be detected.
+            AES-256-GCM provides authenticated encryption, protecting both
+            encrypted metadata and file chunks against undetected modification.
           </p>
         </div>
 
@@ -298,16 +299,16 @@
           <h3>Random salt</h3>
           <p>
             Every encryption operation generates a fresh random salt, so the
-            same password can safely be used for different files without
-            producing the same derived key.
+            same password produces a different derived key for each encrypted
+            file.
           </p>
         </div>
 
         <div class="security-item">
           <h3>Local processing</h3>
           <p>
-            Encryption and decryption happen inside your browser. Your file and
-            password are not uploaded to SecureFileCrypt servers.
+            Encryption and decryption happen locally in your browser. Your
+            files and passwords are not uploaded to SecureFileCrypt servers.
           </p>
         </div>
 
