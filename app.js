@@ -1719,6 +1719,65 @@ async function detectSensitiveMetadata(file) {
   }
 
   /*
+   * PDF metadata extraction.
+   * Parsed locally with pdf-lib; the file is never uploaded.
+   */
+  const isPDF =
+    type === "application/pdf" ||
+    name.endsWith(".pdf");
+
+  if (
+    isPDF &&
+    typeof PDFLib !== "undefined"
+  ) {
+    try {
+      const pdfBytes =
+        await file.arrayBuffer();
+
+      const pdfDoc =
+        await PDFLib.PDFDocument.load(
+          pdfBytes,
+          {
+            updateMetadata: false
+          }
+        );
+
+      const pdfMetadata = [
+        ["PDF Title", pdfDoc.getTitle()],
+        ["PDF Author", pdfDoc.getAuthor()],
+        ["PDF Subject", pdfDoc.getSubject()],
+        ["PDF Keywords", pdfDoc.getKeywords()],
+        ["PDF Creator", pdfDoc.getCreator()],
+        ["PDF Producer", pdfDoc.getProducer()],
+        ["PDF Creation Date", pdfDoc.getCreationDate()],
+        ["PDF Modification Date", pdfDoc.getModificationDate()]
+      ];
+
+      for (const [label, value] of pdfMetadata) {
+        if (value !== undefined && value !== null) {
+          add(
+            label,
+            value instanceof Date
+              ? value.toLocaleString()
+              : value
+          );
+          metadataFound = true;
+        }
+      }
+    } catch (error) {
+      console.error(
+        "PDF metadata error:",
+        error
+      );
+
+      add(
+        "Metadata parser",
+        "Unable to read PDF metadata"
+      );
+    }
+  }
+
+  /*
    * Basic format detection for non-images.
    * We intentionally do not claim that these
    * formats have been completely parsed.
