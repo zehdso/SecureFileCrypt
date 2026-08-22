@@ -233,6 +233,14 @@ async function derivePBKDF2Key(password, salt) {
 }
 
 function createChunkIv(baseIv, counter) {
+  if (
+    !Number.isSafeInteger(counter) ||
+    counter < 0 ||
+    counter > 0xFFFFFFFF
+  ) {
+    throw new Error("Chunk counter exceeds AES-GCM IV limit.");
+  }
+
   const iv = new Uint8Array(baseIv);
   const view = new DataView(iv.buffer);
 
@@ -274,13 +282,18 @@ function readUint32(data, offset) {
 }
 
 function readUint64(data, offset) {
-  return Number(
+  const value =
     new DataView(
       data.buffer,
       data.byteOffset + offset,
       8
-    ).getBigUint64(0, true)
-  );
+    ).getBigUint64(0, true);
+
+  if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error("File size exceeds the supported limit.");
+  }
+
+  return Number(value);
 }
 
 function prepareDownload(blob, filename) {
@@ -1050,11 +1063,49 @@ decryptButton.addEventListener(
           );
         }
 
+        if (
+          !Number.isSafeInteger(originalSize) ||
+          originalSize < 0
+        ) {
+          throw new Error(
+            "Invalid original file size."
+          );
+        }
+
+        if (
+          originalSize === 0
+        ) {
+          if (offset !== data.length) {
+            throw new Error(
+              "Invalid encrypted file."
+            );
+          }
+
+          result = {
+            blob: new Blob(),
+            filename: originalName
+          };
+
+          decryptStatus.textContent =
+            "Decryption complete.";
+
+          return;
+        }
+
         const chunkCount =
           Math.ceil(
             originalSize /
               chunkSize
           );
+
+        if (
+          chunkCount < 1 ||
+          chunkCount > 0x100000000
+        ) {
+          throw new Error(
+            "File contains too many encrypted chunks."
+          );
+        }
 
         const decryptedChunks = [];
 
