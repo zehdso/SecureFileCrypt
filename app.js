@@ -1541,10 +1541,15 @@ function showFileMetadata(file, type) {
 
 if (encryptFile) {
   encryptFile.addEventListener("change", () => {
-    showFileMetadata(
-      encryptFile.files[0],
-      "encrypt"
-    );
+    const file = encryptFile.files[0];
+    const sensitiveSection =
+      document.getElementById("encryptSensitiveSection");
+
+    showFileMetadata(file, "encrypt");
+
+    if (sensitiveSection) {
+      sensitiveSection.classList.toggle("hidden", !file);
+    }
   });
 }
 
@@ -1660,7 +1665,11 @@ async function extractOfficeMetadata(file, add) {
  * full: true requests all internal metadata fields.
  */
 async function extractQuickTimeLocation(file, add) {
-  const buffer = new Uint8Array(await file.arrayBuffer());
+  const MAX_SCAN_BYTES = 4 * 1024 * 1024;
+  const buffer = new Uint8Array(
+    await file.slice(0, Math.min(file.size, MAX_SCAN_BYTES)).arrayBuffer()
+  );
+
   const text = new TextDecoder("latin1").decode(buffer);
 
   const keys = [
@@ -1676,7 +1685,7 @@ async function extractQuickTimeLocation(file, add) {
     const start = index + key.length;
     const end = Math.min(start + 128, text.length);
 
-    let value = text
+    const value = text
       .slice(start, end)
       .replace(/[^\x20-\x7E+\-./]/g, "")
       .trim();
@@ -1693,7 +1702,6 @@ async function extractQuickTimeLocation(file, add) {
 
   return false;
 }
-
 async function extractMediaMetadata(file, add) {
   if (typeof MediaInfo === "undefined") {
     throw new Error("MediaInfo.js is not available.");

@@ -1447,3 +1447,156 @@ body:has(#warningModal:not(.hidden)) .app {
   filter: blur(8px);
 }
 
+/* Sensitive Metadata — unified card */
+.sensitive-metadata-section {
+  margin-top: 12px;
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card-background, #fff);
+}
+
+.sensitive-metadata-section .metadata-sensitive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0;
+  padding: 13px 15px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sensitive-metadata-section .metadata-sensitive > span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sensitive-metadata-section #encryptSensitivePanel {
+  margin: 0;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent > div {
+  border-radius: 0;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent > p {
+  margin: 0;
+  padding: 12px 14px;
+}
+
+@media (max-width: 600px) {
+  .sensitive-metadata-section .metadata-sensitive {
+    padding: 12px 13px;
+  }
+}
+
+/* Final cleanup: Sensitive Metadata must be one card */
+.sensitive-metadata-section {
+  border: 1px solid var(--border-color, #e4e4e7) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+.sensitive-metadata-section .metadata-sensitive {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--border-color, #e4e4e7) !important;
+  background: transparent !important;
+}
+
+.sensitive-metadata-section #encryptSensitivePanel {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent > div {
+  border-radius: 0 !important;
+}
+
+/* Fix nested sensitive metadata card */
+.sensitive-metadata-section #sensitiveMetadataContent .metadata-panel {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent .metadata-panel > div {
+  border-radius: 0 !important;
+}
+
+
+/* Final Sensitive Metadata container */
+.sensitive-metadata-section {
+  margin-top: 12px !important;
+  border: 1px solid var(--border-color, #292929) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  background: var(--card-background, #0d0d0d) !important;
+}
+
+.sensitive-metadata-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  min-height: 48px !important;
+  padding: 0 15px !important;
+  box-sizing: border-box !important;
+}
+
+.sensitive-metadata-header > span:first-child {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+
+.sensitive-metadata-header .modern-toggle {
+  flex: 0 0 46px !important;
+}
+
+.sensitive-metadata-section #encryptSensitivePanel {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent > div {
+  border-radius: 0 !important;
+}
+
+.sensitive-metadata-section #sensitiveMetadataContent > p {
+  margin: 0 !important;
+}
+

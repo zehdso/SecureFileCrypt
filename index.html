@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Securely encrypt and decrypt files locally in your browser.">
   <title>SecureFileCrypt</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 
@@ -37,16 +37,21 @@
         <div><span>Size</span><strong id="encryptMetaSize">—</strong></div>
         <div><span>Modified</span><strong id="encryptMetaModified">—</strong></div>
 
-        <label class="metadata-sensitive">
+      </div>
+
+      <div id="encryptSensitiveSection" class="sensitive-metadata-section hidden">
+        <div class="sensitive-metadata-header">
           <span>Show sensitive metadata</span>
-          <span class="modern-toggle">
+          <label class="modern-toggle">
             <input id="encryptSensitiveMetadata" type="checkbox">
             <span class="modern-toggle-track"></span>
-          </span>
-        </label>
+          </label>
+        </div>
 
         <div id="encryptSensitivePanel" class="hidden">
-          <div id="sensitiveMetadataContent"><p>No sensitive metadata detected.</p></div>
+          <div id="sensitiveMetadataContent">
+            <p>No sensitive metadata detected.</p>
+          </div>
         </div>
       </div>
 
