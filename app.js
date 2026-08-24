@@ -1813,13 +1813,7 @@ async function detectSensitiveMetadata(file) {
     }
   };
 
-  add("Filename", file.name);
   add("MIME type", file.type || "Unknown");
-  add("Size", formatBytes(file.size));
-  add(
-    "Last modified",
-    new Date(file.lastModified).toLocaleString()
-  );
 
   const type =
     (file.type || "").toLowerCase();
@@ -2266,8 +2260,67 @@ async function detectSensitiveMetadata(file) {
     );
   }
 
-  content.innerHTML =
-    rows.join("");
+  const metadataRows = rows.join("");
+  const previewRows = rows.slice(0, 6).join("");
+
+  content.innerHTML = `<div class="sensitive-metadata-preview">${previewRows}<div class="metadata-preview-fade"></div><button type="button" class="view-all-metadata" id="viewAllMetadata">View all</button></div>`;
+
+  const viewAllMetadata = document.getElementById("viewAllMetadata");
+
+  if (viewAllMetadata) {
+    viewAllMetadata.addEventListener("click", () => {
+      const modal = document.getElementById("metadataModal");
+      const allContent = document.getElementById("allMetadataContent");
+
+      if (modal && allContent) {
+        allContent.innerHTML = metadataRows;
+        modal.classList.remove("hidden");
+      }
+    });
+  }
+
+  const closeMetadataModal =
+    document.getElementById("closeMetadataModal");
+
+  if (closeMetadataModal) {
+    closeMetadataModal.onclick = () => {
+      document
+        .getElementById("metadataModal")
+        ?.classList.add("hidden");
+    };
+  }
+
+  const copyAllMetadata =
+    document.getElementById("copyAllMetadata");
+
+  if (copyAllMetadata) {
+    copyAllMetadata.onclick = async () => {
+      const allContent =
+        document.getElementById("allMetadataContent");
+
+      if (!allContent) return;
+
+      const text =
+        Array.from(allContent.querySelectorAll(":scope > div"))
+          .map(row => {
+            const label =
+              row.querySelector("span")?.textContent || "";
+            const value =
+              row.querySelector("strong")?.textContent || "";
+
+            return `${label}: ${value}`;
+          })
+          .join("\n");
+
+      await navigator.clipboard.writeText(text);
+
+      copyAllMetadata.textContent = "Copied";
+
+      setTimeout(() => {
+        copyAllMetadata.textContent = "Copy";
+      }, 1200);
+    };
+  }
 }
 
 if (
