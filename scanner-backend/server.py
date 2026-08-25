@@ -76,7 +76,8 @@ def scan():
 
                 temp.write(chunk)
 
-        result = RULES.scan_file(temp_path)
+        scanner = yara_x.Scanner(RULES)
+        result = scanner.scan_file(temp_path)
         matches = result.matching_rules
 
         return jsonify({
