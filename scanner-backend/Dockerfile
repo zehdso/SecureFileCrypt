@@ -1,21 +1,15 @@
-FROM clamav/clamav:stable
-
-USER root
-
-RUN apk add --no-cache nodejs npm
+FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY server.js ./
-COPY start.sh ./
-
-RUN chmod +x start.sh
+COPY server.py .
+COPY rules ./rules
 
 ENV PORT=10000
 
 EXPOSE 10000
 
-CMD ["/app/start.sh"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 2 --timeout 120 server:app"]
