@@ -11,9 +11,13 @@ const passwordStrengthFill = document.getElementById("passwordStrengthFill");
 const passwordStrengthText = document.getElementById("passwordStrengthText");
 
 const encryptButton = document.getElementById("encryptButton");
+const scanButton = document.getElementById("scanButton");
 const decryptButton = document.getElementById("decryptButton");
 
 const encryptStatus = document.getElementById("encryptStatus");
+
+const scanStatus = document.getElementById("scanStatus");
+const SCANNER_URL = "https://securefilecrypt.onrender.com";
 const decryptStatus = document.getElementById("decryptStatus");
 
 const encryptResult = document.getElementById("encryptResult");
@@ -605,6 +609,66 @@ async function decryptSFC2(data, password) {
     filename: originalName
   };
 }
+
+scanButton.addEventListener("click", async () => {
+  const file = encryptFile.files[0];
+
+  if (!file) {
+    scanStatus.textContent = "Scan: no file selected.";
+    return;
+  }
+
+  scanButton.disabled = true;
+
+  try {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    scanStatus.textContent =
+      `Scan 1/4: Selected "${file.name}" (${sizeMB} MB).`;
+
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    scanStatus.textContent =
+      "Scan 2/4: Connecting to YARA-X scanner...";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${SCANNER_URL}/scan`, {
+      method: "POST",
+      body: formData
+    });
+
+    scanStatus.textContent =
+      "Scan 3/4: YARA-X is analyzing the file...";
+
+    if (!response.ok) {
+      throw new Error(`Scanner returned HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.status === "suspicious") {
+      scanStatus.textContent =
+        `Scan 4/4: SUSPICIOUS — ${result.matches.join(", ") || "threat detected"}.`;
+      return;
+    }
+
+    if (result.status === "no_match") {
+      scanStatus.textContent =
+        `Scan 4/4: CLEAN — YARA-X found no matching rules.`;
+      return;
+    }
+
+    throw new Error(result.error || "Unexpected scanner response.");
+
+  } catch (error) {
+    console.error("Scan error:", error);
+    scanStatus.textContent =
+      `Scan failed: ${error.message}`;
+  } finally {
+    scanButton.disabled = false;
+  }
+});
 
 encryptButton.addEventListener(
   "click",
