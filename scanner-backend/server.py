@@ -88,12 +88,13 @@ def scan():
         })
 
     except Exception as error:
-        print("YARA-X error:", error)
+        print("YARA-X error:", repr(error), flush=True)
 
         return jsonify({
             "engine": "YARA-X",
             "status": "error",
-            "error": "YARA-X scan failed."
+            "error": "YARA-X scan failed.",
+            "debug": repr(error)
         }), 503
 
     finally:
