@@ -1935,3 +1935,23 @@ body:has(#warningModal:not(.hidden)) .app {
 transform: translateY(0px) !important;
 }
 
+
+
+#scanProgressContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#scanProgress {
+  flex: 1;
+  width: 100%;
+  height: 10px;
+}
+
+#scanProgressText {
+  min-width: 90px;
+  font-size: 13px;
+  text-align: right;
+}
