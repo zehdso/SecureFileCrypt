@@ -17,6 +17,9 @@ const decryptButton = document.getElementById("decryptButton");
 const encryptStatus = document.getElementById("encryptStatus");
 
 const scanStatus = document.getElementById("scanStatus");
+const scanProgressContainer = document.getElementById("scanProgressContainer");
+const scanProgress = document.getElementById("scanProgress");
+const scanProgressText = document.getElementById("scanProgressText");
 const SCANNER_URL = "https://securefilecrypt.onrender.com";
 const decryptStatus = document.getElementById("decryptStatus");
 
@@ -619,6 +622,9 @@ scanButton.addEventListener("click", async () => {
   }
 
   scanButton.disabled = true;
+  scanProgressContainer.classList.remove("hidden");
+  scanProgress.value = 0;
+  scanProgressText.textContent = "0%";
 
   try {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
@@ -633,17 +639,59 @@ scanButton.addEventListener("click", async () => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${SCANNER_URL}/scan`, {
-      method: "POST",
-      body: formData
+    const response = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.open("POST", `${SCANNER_URL}/scan`);
+
+      xhr.upload.addEventListener("progress", event => {
+        if (!event.lengthComputable) return;
+
+        const percent = Math.round(
+          (event.loaded / event.total) * 100
+        );
+
+        const loadedMB =
+          (event.loaded / (1024 * 1024)).toFixed(2);
+
+        const totalMB =
+          (event.total / (1024 * 1024)).toFixed(2);
+
+        scanProgressContainer.classList.remove("hidden");
+        scanProgress.value = percent;
+        scanProgressText.textContent =
+          `${percent}% (${loadedMB} / ${totalMB} MB)`;
+
+        scanStatus.textContent =
+          `Scan 3/4: Uploading file... ${percent}%`;
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({
+            ok: true,
+            json: async () => JSON.parse(xhr.responseText)
+          });
+        } else {
+          reject(
+            new Error(`Scanner returned HTTP ${xhr.status}`)
+          );
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        reject(new Error("Network error while uploading file."));
+      });
+
+      xhr.addEventListener("abort", () => {
+        reject(new Error("File upload was cancelled."));
+      });
+
+      xhr.send(formData);
     });
 
     scanStatus.textContent =
-      "Scan 3/4: YARA-X is analyzing the file...";
-
-    if (!response.ok) {
-      throw new Error(`Scanner returned HTTP ${response.status}`);
-    }
+      "Scan 4/4: YARA-X is analyzing the uploaded file...";
 
     const result = await response.json();
 
