@@ -1938,7 +1938,7 @@ transform: translateY(0px) !important;
 
 
 #scanProgressContainer {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 10px;
   margin-top: 10px;
