@@ -1,1 +1,4 @@
 node_modules/
+scanner-backend/__pycache__/
+scanner-backend/server.py.backup
+test-scan.txt
