@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY server.py .
 COPY rules ./rules
+COPY rules-community ./rules-community
 
 ENV PORT=10000
 
