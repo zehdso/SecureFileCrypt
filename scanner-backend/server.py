@@ -87,6 +87,7 @@ def scan():
     temp_path = None
 
     try:
+        print(f"SCAN: upload started: {file.filename}", flush=True)
         with tempfile.NamedTemporaryFile(delete=False) as temp:
             temp_path = temp.name
 
@@ -109,8 +110,14 @@ def scan():
 
                 temp.write(chunk)
 
+        print(f"SCAN: upload complete: {total_size} bytes", flush=True)
+        print("SCAN: starting YARA-X scan", flush=True)
+
         scanner = yara_x.Scanner(RULES)
+        print("SCAN: scanner created", flush=True)
+        print("SCAN: scan_file started", flush=True)
         result = scanner.scan_file(temp_path)
+        print("SCAN: YARA-X scan completed", flush=True)
         matches = result.matching_rules
 
         return jsonify({
