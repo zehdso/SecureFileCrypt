@@ -10,7 +10,6 @@ RULES_DIR = os.path.join(os.path.dirname(__file__), "rules")
 COMMUNITY_DIR = os.path.join(os.path.dirname(__file__), "rules-community")
 
 rule_files = []
-
 for directory in (RULES_DIR, COMMUNITY_DIR):
     if os.path.isdir(directory):
         for root, _, files in os.walk(directory):
@@ -20,21 +19,34 @@ for directory in (RULES_DIR, COMMUNITY_DIR):
 
 rule_files.sort()
 
-rule_sources = []
+valid_sources = []
+failed_rules = []
 
 for path in rule_files:
-    with open(path, "r", encoding="utf-8", errors="ignore") as f:
-        rule_sources.append(
-            f"// SFC rule source: {os.path.relpath(path, os.path.dirname(__file__))}\\n"
-            + f.read()
-        )
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            source = f.read()
 
-if not rule_sources:
-    raise RuntimeError("No YARA rules found.")
+        yara_x.compile(source)
+        valid_sources.append(source)
 
-RULES = yara_x.compile("\\n\\n".join(rule_sources))
+    except Exception as error:
+        failed_rules.append((path, str(error).splitlines()[0]))
 
-print(f"Loaded {len(rule_files)} YARA rule files.", flush=True)
+if not valid_sources:
+    raise RuntimeError("No compatible YARA-X rules found.")
+
+RULES = yara_x.compile("\\n\\n".join(valid_sources))
+
+print(
+    f"YARA-X: {len(valid_sources)}/{len(rule_files)} rule files loaded; "
+    f"{len(failed_rules)} skipped.",
+    flush=True
+)
+
+for path, error in failed_rules:
+    print(f"YARA-X skipped: {path} :: {error}", flush=True)
+
 
 
 @app.after_request
