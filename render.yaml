@@ -1,1 +1,1 @@
-web: gunicorn --chdir scanner-backend server:app
+web: gunicorn --chdir scanner-backend --timeout 600 server:app
