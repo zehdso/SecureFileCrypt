@@ -36,7 +36,7 @@ for path in rule_files:
 if not valid_sources:
     raise RuntimeError("No compatible YARA-X rules found.")
 
-RULES = yara_x.compile("\\n\\n".join(valid_sources))
+RULES = yara_x.compile("\n\n".join(valid_sources))
 
 print(
     f"YARA-X: {len(valid_sources)}/{len(rule_files)} rule files loaded; "
