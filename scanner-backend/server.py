@@ -6,14 +6,35 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 MAX_FILE_SIZE = 500 * 1024 * 1024
-RULES_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "rules",
-    "basic_malware.yarax"
-)
+RULES_DIR = os.path.join(os.path.dirname(__file__), "rules")
+COMMUNITY_DIR = os.path.join(os.path.dirname(__file__), "rules-community")
 
-with open(RULES_PATH, "r", encoding="utf-8") as f:
-    RULES = yara_x.compile(f.read())
+rule_files = []
+
+for directory in (RULES_DIR, COMMUNITY_DIR):
+    if os.path.isdir(directory):
+        for root, _, files in os.walk(directory):
+            for name in files:
+                if name.lower().endswith((".yar", ".yara", ".yarax")):
+                    rule_files.append(os.path.join(root, name))
+
+rule_files.sort()
+
+rule_sources = []
+
+for path in rule_files:
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        rule_sources.append(
+            f"// SFC rule source: {os.path.relpath(path, os.path.dirname(__file__))}\\n"
+            + f.read()
+        )
+
+if not rule_sources:
+    raise RuntimeError("No YARA rules found.")
+
+RULES = yara_x.compile("\\n\\n".join(rule_sources))
+
+print(f"Loaded {len(rule_files)} YARA rule files.", flush=True)
 
 
 @app.after_request
