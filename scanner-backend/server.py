@@ -1,4 +1,5 @@
 import os
+import uuid
 import tempfile
 import yara_x
 from flask import Flask, request, jsonify
