@@ -621,79 +621,118 @@ scanButton.addEventListener("click", async () => {
     return;
   }
 
+  const pauseScanButton = document.getElementById("pauseScanButton");
+  const CHUNK_SIZE = 5 * 1024 * 1024;
+
   scanButton.disabled = true;
+  pauseScanButton.classList.remove("hidden");
+  pauseScanButton.textContent = "Pause Upload";
   scanProgressContainer.classList.remove("hidden");
   scanProgress.value = 0;
   scanProgressText.textContent = "0%";
 
+  let uploadId = null;
+  let offset = 0;
+  let paused = false;
+
   try {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
     scanStatus.textContent =
       `Scan 1/4: Selected "${file.name}" (${sizeMB} MB).`;
 
-    await new Promise(resolve => setTimeout(resolve, 150));
+    const startResponse = await fetch(`${SCANNER_URL}/upload/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        size: file.size
+      })
+    });
+
+    if (!startResponse.ok) {
+      throw new Error("Could not start upload.");
+    }
+
+    const startResult = await startResponse.json();
+    uploadId = startResult.upload_id;
+    offset = startResult.offset || 0;
 
     scanStatus.textContent =
-      "Scan 2/4: Connecting to YARA-X scanner...";
+      "Scan 2/4: Uploading file...";
 
-    const formData = new FormData();
-    formData.append("file", file);
+    pauseScanButton.onclick = () => {
+      paused = !paused;
+      pauseScanButton.textContent =
+        paused ? "Resume Upload" : "Pause Upload";
 
-    const response = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
+      scanStatus.textContent =
+        paused
+          ? "Scan 3/4: Upload paused."
+          : "Scan 3/4: Upload resumed.";
+    };
 
-      xhr.open("POST", `${SCANNER_URL}/scan`);
+    while (offset < file.size) {
+      while (paused) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
 
-      xhr.upload.addEventListener("progress", event => {
-        if (!event.lengthComputable) return;
+      const end = Math.min(offset + CHUNK_SIZE, file.size);
+      const chunk = file.slice(offset, end);
 
-        const percent = Math.round(
-          (event.loaded / event.total) * 100
-        );
-
-        const loadedMB =
-          (event.loaded / (1024 * 1024)).toFixed(2);
-
-        const totalMB =
-          (event.total / (1024 * 1024)).toFixed(2);
-
-        scanProgressContainer.classList.remove("hidden");
-        scanProgress.value = percent;
-        scanProgressText.textContent =
-          `${percent}% (${loadedMB} / ${totalMB} MB)`;
-
-        scanStatus.textContent =
-          `Scan 3/4: Uploading file... ${percent}%`;
+      const response = await fetch(`${SCANNER_URL}/upload/chunk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "X-Upload-ID": uploadId,
+          "X-Upload-Offset": String(offset)
+        },
+        body: chunk
       });
 
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve({
-            ok: true,
-            json: async () => JSON.parse(xhr.responseText)
-          });
-        } else {
-          reject(
-            new Error(`Scanner returned HTTP ${xhr.status}`)
-          );
-        }
-      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `Upload failed (${response.status}).`);
+      }
 
-      xhr.addEventListener("error", () => {
-        reject(new Error("Network error while uploading file."));
-      });
+      const result = await response.json();
+      offset = result.offset;
 
-      xhr.addEventListener("abort", () => {
-        reject(new Error("File upload was cancelled."));
-      });
+      const percent = Math.round((offset / file.size) * 100);
+      const loadedMB = (offset / (1024 * 1024)).toFixed(2);
+      const totalMB = (file.size / (1024 * 1024)).toFixed(2);
 
-      xhr.send(formData);
-    });
+      scanProgress.value = percent;
+      scanProgressText.textContent =
+        `${percent}% (${loadedMB} / ${totalMB} MB)`;
+
+      scanStatus.textContent =
+        `Scan 3/4: Uploading file... ${percent}%`;
+    }
+
+    pauseScanButton.classList.add("hidden");
 
     scanStatus.textContent =
       "Scan 4/4: YARA-X is analyzing the uploaded file...";
 
-    const result = await response.json();
+    const scanResponse = await fetch(`${SCANNER_URL}/scan-upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        upload_id: uploadId,
+        filename: file.name
+      })
+    });
+
+    if (!scanResponse.ok) {
+      throw new Error(`Scanner returned HTTP ${scanResponse.status}`);
+    }
+
+    const result = await scanResponse.json();
 
     if (result.status === "suspicious") {
       scanStatus.textContent =
@@ -703,7 +742,7 @@ scanButton.addEventListener("click", async () => {
 
     if (result.status === "no_match") {
       scanStatus.textContent =
-        `Scan 4/4: CLEAN — YARA-X found no matching rules.`;
+        "Scan 4/4: CLEAN — YARA-X found no matching rules.";
       return;
     }
 
@@ -715,6 +754,7 @@ scanButton.addEventListener("click", async () => {
       `Scan failed: ${error.message}`;
   } finally {
     scanButton.disabled = false;
+    pauseScanButton.classList.add("hidden");
   }
 });
 

@@ -2,6 +2,7 @@ import os
 import tempfile
 import yara_x
 from flask import Flask, request, jsonify
+import uuid
 
 app = Flask(__name__)
 
@@ -10,7 +11,7 @@ RULES_DIR = os.path.join(os.path.dirname(__file__), "rules")
 COMMUNITY_DIR = os.path.join(os.path.dirname(__file__), "rules-community")
 
 rule_files = []
-for directory in (RULES_DIR, COMMUNITY_DIR):
+for directory in (RULES_DIR,):
     if os.path.isdir(directory):
         for root, _, files in os.walk(directory):
             for name in files:
@@ -73,6 +74,132 @@ def health():
         "engine": "YARA-X"
     })
 
+
+
+UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "sfc-uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/upload/start")
+def upload_start():
+    data = request.get_json(silent=True) or {}
+    filename = data.get("filename", "")
+    size = int(data.get("size", 0))
+
+    if not filename or size <= 0:
+        return jsonify({"error": "Invalid upload."}), 400
+
+    if size > MAX_FILE_SIZE:
+        return jsonify({"error": "File is too large."}), 413
+
+    upload_id = uuid.uuid4().hex
+    path = os.path.join(UPLOAD_DIR, upload_id)
+
+    open(path, "wb").close()
+
+    return jsonify({
+        "upload_id": upload_id,
+        "offset": 0
+    })
+
+
+@app.post("/upload/chunk")
+def upload_chunk():
+    upload_id = request.headers.get("X-Upload-ID")
+    offset = int(request.headers.get("X-Upload-Offset", "0"))
+
+    if not upload_id or request.content_length is None:
+        return jsonify({"error": "Invalid upload chunk."}), 400
+
+    path = os.path.join(UPLOAD_DIR, upload_id)
+
+    if not os.path.isfile(path):
+        return jsonify({"error": "Upload not found."}), 404
+
+    current_size = os.path.getsize(path)
+
+    if offset != current_size:
+        return jsonify({
+            "error": "Invalid offset.",
+            "offset": current_size
+        }), 409
+
+    with open(path, "ab") as f:
+        f.write(request.get_data())
+
+    new_offset = os.path.getsize(path)
+
+    if new_offset > MAX_FILE_SIZE:
+        os.remove(path)
+        return jsonify({"error": "File is too large."}), 413
+
+    return jsonify({"offset": new_offset})
+
+
+@app.get("/upload/status/<upload_id>")
+def upload_status(upload_id):
+    path = os.path.join(UPLOAD_DIR, upload_id)
+
+    if not os.path.isfile(path):
+        return jsonify({"error": "Upload not found."}), 404
+
+    return jsonify({
+        "upload_id": upload_id,
+        "offset": os.path.getsize(path)
+    })
+
+
+@app.post("/scan-upload")
+def scan_upload():
+    data = request.get_json(silent=True) or {}
+    upload_id = data.get("upload_id")
+    filename = data.get("filename", "")
+
+    if not upload_id or not filename:
+        return jsonify({"error": "Invalid scan request."}), 400
+
+    temp_path = os.path.join(UPLOAD_DIR, upload_id)
+
+    if not os.path.isfile(temp_path):
+        return jsonify({"error": "Upload not found."}), 404
+
+    total_size = os.path.getsize(temp_path)
+
+    if total_size > MAX_FILE_SIZE:
+        return jsonify({
+            "engine": "YARA-X",
+            "status": "too_large",
+            "error": "File is too large."
+        }), 413
+
+    try:
+        print(f"SCAN: scanning completed upload: {filename}", flush=True)
+
+        scanner = yara_x.Scanner(RULES)
+        result = scanner.scan_file(temp_path)
+        matches = result.matching_rules
+
+        return jsonify({
+            "engine": "YARA-X",
+            "filename": filename,
+            "size": total_size,
+            "status": "suspicious" if matches else "no_match",
+            "matches": [rule.identifier for rule in matches]
+        })
+
+    except Exception as error:
+        print("YARA-X error:", repr(error), flush=True)
+
+        return jsonify({
+            "engine": "YARA-X",
+            "status": "error",
+            "error": "YARA-X scan failed."
+        }), 503
+
+    finally:
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
 
 @app.post("/scan")
 def scan():

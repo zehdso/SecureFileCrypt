@@ -1938,19 +1938,152 @@ transform: translateY(0px) !important;
 
 
 #scanProgressContainer {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--card-bg, rgba(128, 128, 128, 0.08));
 }
 
 #scanProgress {
   flex: 1;
   width: 100%;
-  height: 10px;
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 #scanProgressText {
-  min-width: 90px;
+  min-width: 95px;
   font-size: 13px;
+  font-weight: 500;
   text-align: right;
+  white-space: nowrap;
+}
+
+
+/* SecureFileCrypt Scanner UI */
+
+#scanButton {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  padding: 13px 18px;
+  border: 1px solid var(--border-color, #303030);
+  border-radius: 12px;
+  background: var(--button-bg, #171717);
+  color: var(--text-color, #fff);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .15s ease, background .2s ease,
+              border-color .2s ease, opacity .2s ease;
+}
+
+#scanButton:hover:not(:disabled) {
+  background: #202020;
+  border-color: #4a4a4a;
+  transform: translateY(-1px);
+}
+
+#scanButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+#scanButton:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#scanStatus {
+  margin: 14px 0 0;
+  padding: 0;
+  color: #aaa;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#scanStatus:not(:empty) {
+  padding: 14px 16px;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  background: #111;
+}
+
+#scanStatus.scan-loading {
+  color: #bbb;
+}
+
+#scanStatus.scan-clean {
+  color: #d5ead9;
+  border-color: #29432f;
+  background: #0d1710;
+}
+
+#scanStatus.scan-suspicious {
+  color: #f0cccc;
+  border-color: #4a2929;
+  background: #190d0d;
+}
+
+#scanStatus.scan-error {
+  color: #e6d5a8;
+  border-color: #4a4028;
+  background: #18150d;
+}
+
+#scanProgressContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  background: #111;
+}
+
+#scanProgress {
+  flex: 1;
+  width: 100%;
+  height: 7px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #292929;
+}
+
+#scanProgress::-webkit-progress-bar {
+  background: #292929;
+  border-radius: 999px;
+}
+
+#scanProgress::-webkit-progress-value {
+  background: #fff;
+  border-radius: 999px;
+  transition: width .2s ease;
+}
+
+#scanProgress::-moz-progress-bar {
+  background: #fff;
+  border-radius: 999px;
+}
+
+#scanProgressText {
+  min-width: 100px;
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
 }
