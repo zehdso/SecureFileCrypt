@@ -2078,12 +2078,3 @@ transform: translateY(0px) !important;
   background: #fff;
   border-radius: 999px;
 }
-
-#scanProgressText {
-  min-width: 100px;
-  color: #aaa;
-  font-size: 12px;
-  font-weight: 500;
-  text-align: right;
-  white-space: nowrap;
-}

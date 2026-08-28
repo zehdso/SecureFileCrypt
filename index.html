@@ -7,6 +7,36 @@
   <title>SecureFileCrypt</title>
   <link rel="stylesheet" href="style.css?v=2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+#pauseScanButton.scan-pause-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 12px;
+  padding: 13px 18px;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  background: #171717;
+  color: #f5f5f5;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+#pauseScanButton.scan-pause-button svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+  flex: 0 0 auto;
+}
+#pauseScanButton.scan-pause-button.hidden {
+  display: none !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -122,11 +152,13 @@
         <button id="scanButton" class="secondary-download-button">
           Scan File
         </button>
-      <button id="pauseScanButton"
-              class="secondary-download-button hidden"
-              type="button">
-        Pause Upload
-      </button>
+      <button id="pauseScanButton" class="scan-pause-button hidden" type="button">
+  <svg class="scan-pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="6" y="5" width="4" height="14" rx="1"></rect>
+    <rect x="14" y="5" width="4" height="14" rx="1"></rect>
+  </svg>
+  <span>Pause Upload</span>
+</button>
 
         <button id="encryptButton" class="primary-button">
           Encrypt File
